@@ -11,8 +11,8 @@ const nextConfig = {
   },
   output: 'export',
   // GitHub Pages specific configuration
-  basePath: process.env.NODE_ENV === 'production' ? '/Happy-Birthday-Varsha' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/Happy-Birthday-Varsha/' : '',
+  basePath: process.env.GITHUB_ACTIONS ? '/Happy-Birthday-Varsha' : '',
+  assetPrefix: process.env.GITHUB_ACTIONS ? '/Happy-Birthday-Varsha/' : '',
 }
 
 export default nextConfig
