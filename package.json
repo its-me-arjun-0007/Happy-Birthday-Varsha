@@ -1,12 +1,13 @@
 {
-  "name": "my-v0-project",
+  "name": "happy-birthday-varsha",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "[ -f package-lock.json ] || npm install --package-lock-only"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

@@ -10,7 +10,7 @@ const nextConfig = {
     unoptimized: true,
   },
   output: 'export',
-  trailingSlash: true,
+  // GitHub Pages specific configuration
   basePath: process.env.NODE_ENV === 'production' ? '/Happy-Birthday-Varsha' : '',
   assetPrefix: process.env.NODE_ENV === 'production' ? '/Happy-Birthday-Varsha/' : '',
 }
