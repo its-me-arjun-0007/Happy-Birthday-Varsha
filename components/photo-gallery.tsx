@@ -9,39 +9,33 @@ import { X } from "lucide-react"
 const PHOTOS = [
   {
     id: 1,
-    src: "/placeholder.svg?height=400&width=600",
-    alt: "Varsha at her previous birthday",
-    caption: "Last year's celebration",
+    src: "https://files.catbox.moe/nnqroj.jpg?height=400&width°600",
+    caption: "❤️",
   },
   {
     id: 2,
-    src: "/placeholder.svg?height=400&width=600",
-    alt: "Varsha with friends",
-    caption: "Fun times with friends",
+    src: "https://files.catbox.moe/wa1vpn.jpg?height=400&width=600",
+    caption: "❤️",
   },
   {
     id: 3,
-    src: "/placeholder.svg?height=400&width=600",
-    alt: "Varsha at a party",
-    caption: "Party memories",
+    src: "https://files.catbox.moe/450wcf.jpg?height=400&width=600",
+    caption: "❤️",
   },
   {
     id: 4,
-    src: "/placeholder.svg?height=400&width=600",
-    alt: "Varsha traveling",
-    caption: "Adventure time",
+    src: "https://files.catbox.moe/fy9eg2.jpg?height=400&width=600",
+    caption: "❤️",
   },
   {
     id: 5,
-    src: "/placeholder.svg?height=400&width=600",
-    alt: "Varsha at graduation",
-    caption: "Proud moments",
+    src: "https://files.catbox.moe/ubbyew.jpg?height=400&width=600",
+    caption: "❤️",
   },
   {
     id: 6,
-    src: "/placeholder.svg?height=400&width=600",
-    alt: "Varsha with family",
-    caption: "Family love",
+    src: "https://files.catbox.moe/gxs8xu.jpg?height=400&width=600",
+    caption: "❤️",
   },
 ]
 
@@ -63,8 +57,8 @@ export default function PhotoGallery() {
               fill
               className="object-cover transition-transform group-hover:scale-110"
             />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-              <p className="text-white text-sm font-medium">{photo.caption}</p>
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-3">
+              <p className="text-white text-sm font-medium text-center">{photo.caption}</p>
             </div>
           </div>
         ))}
@@ -90,7 +84,7 @@ export default function PhotoGallery() {
                   className="object-contain"
                 />
               </div>
-              <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-4">
+              <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-4 text-center">
                 <p className="text-white text-lg">{selectedPhoto.caption}</p>
               </div>
             </div>

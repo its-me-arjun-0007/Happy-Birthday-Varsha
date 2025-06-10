@@ -23,18 +23,18 @@ export default function HomePage() {
       {/* Header */}
       <header className="relative pt-16 pb-10 text-center">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute -top-10 -left-10">
+          <div className="absolute -top-5 -left-0">
             <Image
-              src="/placeholder.svg?height=200&width=200"
+              src="https://files.catbox.moe/yi8hi2.png?height=150&width=150"
               alt="Balloon decoration"
-              width={200}
-              height={200}
+              width={145}
+              height={145}
               className="opacity-70"
             />
           </div>
           <div className="absolute -top-5 right-0">
             <Image
-              src="/placeholder.svg?height=150&width=150"
+              src="https://files.catbox.moe/a9bl7d.png?height=150&width=150"
               alt="Balloon decoration"
               width={150}
               height={150}
