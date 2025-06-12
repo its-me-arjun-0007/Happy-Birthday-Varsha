@@ -6,35 +6,35 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card, CardContent } from "@/components/ui/card"
 
-// Sample playlist
+// Updated playlist with actual audio files
 const PLAYLIST = [
   {
     id: 1,
     title: "Happy Birthday Song",
     artist: "Traditional",
-    duration: 210, // in seconds
+    audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // Replace with actual audio URL
     cover: "/placeholder.svg?height=80&width=80",
   },
   {
     id: 2,
-    title: "Celebration",
-    artist: "Kool & The Gang",
-    duration: 245,
-    cover: "/placeholder.svg?height=80&width=80",
+    title: "Senjitaley",
+    artist: "Remo",
+    audioUrl: "https://files.catbox.moe/bbo9ig.mp3", // Replace with actual audio URL
+    cover: "https://files.catbox.moe/wne5n9.jpg?height=80&width=80",
   },
   {
     id: 3,
-    title: "Birthday",
-    artist: "The Beatles",
-    duration: 183,
-    cover: "/placeholder.svg?height=80&width=80",
+    title: "Nee kavithaigala",
+    artist: "Maragatha Naanayam",
+    audioUrl: "https://files.catbox.moe/4dxt66.mp3", // Replace with actual audio URL
+    cover: "https://files.catbox.moe/0ja0i5.jpg?height=80&width=80",
   },
   {
     id: 4,
-    title: "Can't Stop the Feeling",
-    artist: "Justin Timberlake",
-    duration: 237,
-    cover: "/placeholder.svg?height=80&width=80",
+    title: "Sahibaa",
+    artist: "Anarkali",
+    audioUrl: "https://files.catbox.moe/h8djbg.mp3", // Replace with actual audio URL
+    cover: "https://files.catbox.moe/nvrvne.jpg?height=80&width=80",
   },
 ]
 
@@ -42,72 +42,143 @@ export default function MusicPlayer() {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
   const [isMuted, setIsMuted] = useState(false)
   const [volume, setVolume] = useState(80)
+  const [isLoading, setIsLoading] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const currentTrack = PLAYLIST[currentTrackIndex]
 
-  // In a real app, you would use actual audio files
-  // For this demo, we'll simulate playback
+  // Initialize audio element
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime((prevTime) => {
-          const newTime = prevTime + 1
-          if (newTime >= currentTrack.duration) {
-            handleNext()
-            return 0
-          }
-          return newTime
-        })
-      }, 1000)
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100
     }
+  }, [])
+
+  // Load new track when currentTrackIndex changes
+  useEffect(() => {
+    if (audioRef.current && currentTrack.audioUrl) {
+      setIsLoading(true)
+      audioRef.current.src = currentTrack.audioUrl
+      audioRef.current.load()
+    }
+  }, [currentTrackIndex, currentTrack.audioUrl])
+
+  // Audio event handlers
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleLoadedData = () => {
+      setIsLoading(false)
+      setDuration(audio.duration)
+    }
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime)
+    }
+
+    const handleEnded = () => {
+      handleNext()
+    }
+
+    const handleCanPlay = () => {
+      setIsLoading(false)
+      // Auto-play when track is ready
+      if (isPlaying) {
+        audio.play().catch(console.error)
+      }
+    }
+
+    const handleError = () => {
+      setIsLoading(false)
+      console.error("Error loading audio file")
+    }
+
+    audio.addEventListener("loadeddata", handleLoadedData)
+    audio.addEventListener("timeupdate", handleTimeUpdate)
+    audio.addEventListener("ended", handleEnded)
+    audio.addEventListener("canplay", handleCanPlay)
+    audio.addEventListener("error", handleError)
 
     return () => {
-      if (interval) clearInterval(interval)
+      audio.removeEventListener("loadeddata", handleLoadedData)
+      audio.removeEventListener("timeupdate", handleTimeUpdate)
+      audio.removeEventListener("ended", handleEnded)
+      audio.removeEventListener("canplay", handleCanPlay)
+      audio.removeEventListener("error", handleError)
     }
-  }, [isPlaying, currentTrack.duration])
+  }, [isPlaying])
 
   const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return "0:00"
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`
   }
 
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying)
+  const handlePlayPause = async () => {
+    if (!audioRef.current) return
+
+    try {
+      if (isPlaying) {
+        audioRef.current.pause()
+        setIsPlaying(false)
+      } else {
+        await audioRef.current.play()
+        setIsPlaying(true)
+      }
+    } catch (error) {
+      console.error("Error playing audio:", error)
+    }
   }
 
   const handlePrevious = () => {
-    setCurrentTrackIndex((prevIndex) => (prevIndex === 0 ? PLAYLIST.length - 1 : prevIndex - 1))
+    const newIndex = currentTrackIndex === 0 ? PLAYLIST.length - 1 : currentTrackIndex - 1
+    setCurrentTrackIndex(newIndex)
     setCurrentTime(0)
   }
 
   const handleNext = () => {
-    setCurrentTrackIndex((prevIndex) => (prevIndex === PLAYLIST.length - 1 ? 0 : prevIndex + 1))
+    const newIndex = currentTrackIndex === PLAYLIST.length - 1 ? 0 : currentTrackIndex + 1
+    setCurrentTrackIndex(newIndex)
     setCurrentTime(0)
   }
 
   const handleSeek = (value: number[]) => {
-    setCurrentTime(value[0])
+    if (audioRef.current) {
+      audioRef.current.currentTime = value[0]
+      setCurrentTime(value[0])
+    }
   }
 
   const handleVolumeChange = (value: number[]) => {
-    setVolume(value[0])
-    setIsMuted(value[0] === 0)
+    const newVolume = value[0]
+    setVolume(newVolume)
+    setIsMuted(newVolume === 0)
     if (audioRef.current) {
-      audioRef.current.volume = value[0] / 100
+      audioRef.current.volume = newVolume / 100
     }
   }
 
   const toggleMute = () => {
-    setIsMuted(!isMuted)
     if (audioRef.current) {
-      audioRef.current.volume = !isMuted ? 0 : volume / 100
+      if (isMuted) {
+        audioRef.current.volume = volume / 100
+        setIsMuted(false)
+      } else {
+        audioRef.current.volume = 0
+        setIsMuted(true)
+      }
     }
+  }
+
+  const handleTrackSelect = (index: number) => {
+    setCurrentTrackIndex(index)
+    setCurrentTime(0)
+    setIsPlaying(true) // Auto-play when track is selected
   }
 
   return (
@@ -124,6 +195,7 @@ export default function MusicPlayer() {
         <div className="flex-1">
           <h3 className="font-semibold text-lg text-purple-800">{currentTrack.title}</h3>
           <p className="text-gray-600">{currentTrack.artist}</p>
+          {isLoading && <p className="text-sm text-gray-500">Loading...</p>}
         </div>
       </div>
 
@@ -131,14 +203,15 @@ export default function MusicPlayer() {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">{formatTime(currentTime)}</span>
-          <span className="text-xs text-gray-500">{formatTime(currentTrack.duration)}</span>
+          <span className="text-xs text-gray-500">{formatTime(duration)}</span>
         </div>
         <Slider
           value={[currentTime]}
-          max={currentTrack.duration}
+          max={duration || 100}
           step={1}
           onValueChange={handleSeek}
           className="cursor-pointer"
+          disabled={isLoading}
         />
         <div className="flex items-center justify-center gap-4 mt-4">
           <Button
@@ -146,6 +219,7 @@ export default function MusicPlayer() {
             size="icon"
             onClick={handlePrevious}
             className="text-purple-700 hover:text-purple-900 hover:bg-purple-100"
+            disabled={isLoading}
           >
             <SkipBack className="h-6 w-6" />
             <span className="sr-only">Previous</span>
@@ -155,8 +229,15 @@ export default function MusicPlayer() {
             size="icon"
             onClick={handlePlayPause}
             className="h-12 w-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+            disabled={isLoading}
           >
-            {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+            ) : isPlaying ? (
+              <Pause className="h-6 w-6" />
+            ) : (
+              <Play className="h-6 w-6 ml-1" />
+            )}
             <span className="sr-only">{isPlaying ? "Pause" : "Play"}</span>
           </Button>
           <Button
@@ -164,6 +245,7 @@ export default function MusicPlayer() {
             size="icon"
             onClick={handleNext}
             className="text-purple-700 hover:text-purple-900 hover:bg-purple-100"
+            disabled={isLoading}
           >
             <SkipForward className="h-6 w-6" />
             <span className="sr-only">Next</span>
@@ -201,11 +283,7 @@ export default function MusicPlayer() {
               className={`cursor-pointer hover:bg-pink-50 transition-colors ${
                 index === currentTrackIndex ? "border-pink-400 bg-pink-50" : "border-gray-200"
               }`}
-              onClick={() => {
-                setCurrentTrackIndex(index)
-                setCurrentTime(0)
-                setIsPlaying(true)
-              }}
+              onClick={() => handleTrackSelect(index)}
             >
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="h-10 w-10 rounded overflow-hidden flex-shrink-0">
@@ -219,15 +297,19 @@ export default function MusicPlayer() {
                   <h4 className="font-medium text-sm text-purple-800 truncate">{track.title}</h4>
                   <p className="text-xs text-gray-500 truncate">{track.artist}</p>
                 </div>
-                <div className="text-xs text-gray-500">{formatTime(track.duration)}</div>
+                {index === currentTrackIndex && isPlaying && (
+                  <div className="text-pink-500">
+                    <Play className="h-4 w-4 fill-current" />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
-      {/* Hidden audio element - in a real app, this would play actual audio files */}
-      <audio ref={audioRef} className="hidden" />
+      {/* Audio element */}
+      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" className="hidden" />
     </div>
   )
 }
