@@ -1,45 +1,39 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Loader2 } from "lucide-react"
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
 
-// Updated playlist with real audio URLs
+// Updated playlist with actual audio files
 const PLAYLIST = [
   {
     id: 1,
-    title: "Happy Birthday Anna Cutie",
-    artist: "Tung Tulip",
-    duration: 210,
-    audioUrl: "https://files.catbox.moe/u9twdd.mp3",
-    cover: "https://files.catbox.moe/3m0neu.jpg?height=80&width=80",
+    title: "Happy Birthday Song",
+    artist: "Traditional",
+    audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // Replace with actual audio URL
+    cover: "/placeholder.svg?height=80&width=80",
   },
   {
     id: 2,
     title: "Senjitaley",
     artist: "Remo",
-    duration: 245,
-    audioUrl: "https://files.catbox.moe/bbo9ig.mp3",
+    audioUrl: "https://files.catbox.moe/bbo9ig.mp3", // Replace with actual audio URL
     cover: "https://files.catbox.moe/wne5n9.jpg?height=80&width=80",
   },
   {
     id: 3,
     title: "Nee kavithaigala",
     artist: "Maragatha Naanayam",
-    duration: 183,
-    audioUrl: "https://files.catbox.moe/4dxt66.mp3",
+    audioUrl: "https://files.catbox.moe/4dxt66.mp3", // Replace with actual audio URL
     cover: "https://files.catbox.moe/0ja0i5.jpg?height=80&width=80",
   },
   {
     id: 4,
     title: "Sahibaa",
     artist: "Anarkali",
-    duration: 237,
-    audioUrl: "https://files.catbox.moe/h8djbg.mp3",
+    audioUrl: "https://files.catbox.moe/h8djbg.mp3", // Replace with actual audio URL
     cover: "https://files.catbox.moe/nvrvne.jpg?height=80&width=80",
   },
 ]
@@ -52,107 +46,71 @@ export default function MusicPlayer() {
   const [isMuted, setIsMuted] = useState(false)
   const [volume, setVolume] = useState(80)
   const [isLoading, setIsLoading] = useState(false)
-  const [hasUserInteracted, setHasUserInteracted] = useState(false)
-  const [autoPlayBlocked, setAutoPlayBlocked] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const { toast } = useToast()
   const currentTrack = PLAYLIST[currentTrackIndex]
 
   // Initialize audio element
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      audioRef.current = new Audio()
-      audioRef.current.preload = "metadata"
+    if (audioRef.current) {
       audioRef.current.volume = volume / 100
-
-      // Set up event listeners
-      const audio = audioRef.current
-
-      const handleLoadedMetadata = () => {
-        setDuration(audio.duration || 0)
-        setIsLoading(false)
-      }
-
-      const handleTimeUpdate = () => {
-        setCurrentTime(audio.currentTime || 0)
-      }
-
-      const handleEnded = () => {
-        handleNext()
-      }
-
-      const handleError = (e: Event) => {
-        console.error("Audio error:", e)
-        setIsLoading(false)
-        setIsPlaying(false)
-        toast({
-          title: "Playback Error",
-          description: "Unable to play this track. Skipping to next song.",
-          variant: "destructive",
-        })
-        setTimeout(() => handleNext(), 1000)
-      }
-
-      const handleLoadStart = () => {
-        setIsLoading(true)
-      }
-
-      const handleCanPlay = () => {
-        setIsLoading(false)
-      }
-
-      audio.addEventListener("loadedmetadata", handleLoadedMetadata)
-      audio.addEventListener("timeupdate", handleTimeUpdate)
-      audio.addEventListener("ended", handleEnded)
-      audio.addEventListener("error", handleError)
-      audio.addEventListener("loadstart", handleLoadStart)
-      audio.addEventListener("canplay", handleCanPlay)
-
-      return () => {
-        audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
-        audio.removeEventListener("timeupdate", handleTimeUpdate)
-        audio.removeEventListener("ended", handleEnded)
-        audio.removeEventListener("error", handleError)
-        audio.removeEventListener("loadstart", handleLoadStart)
-        audio.removeEventListener("canplay", handleCanPlay)
-        audio.pause()
-      }
     }
   }, [])
 
-  // Load new track when track index changes
+  // Load new track when currentTrackIndex changes
   useEffect(() => {
-    if (audioRef.current && currentTrack) {
-      const audio = audioRef.current
-      audio.src = currentTrack.audioUrl
-      setCurrentTime(0)
+    if (audioRef.current && currentTrack.audioUrl) {
       setIsLoading(true)
+      audioRef.current.src = currentTrack.audioUrl
+      audioRef.current.load()
+    }
+  }, [currentTrackIndex, currentTrack.audioUrl])
 
-      // Auto-play if user has interacted and we're not blocked
-      if (hasUserInteracted && !autoPlayBlocked) {
-        const playPromise = audio.play()
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsPlaying(true)
-              setAutoPlayBlocked(false)
-            })
-            .catch((error) => {
-              console.log("Auto-play blocked:", error)
-              setAutoPlayBlocked(true)
-              setIsPlaying(false)
-              if (hasUserInteracted) {
-                toast({
-                  title: "Auto-play Blocked",
-                  description: "Click play to start the music. Your browser blocked auto-play.",
-                })
-              }
-            })
-        }
+  // Audio event handlers
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleLoadedData = () => {
+      setIsLoading(false)
+      setDuration(audio.duration)
+    }
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime)
+    }
+
+    const handleEnded = () => {
+      handleNext()
+    }
+
+    const handleCanPlay = () => {
+      setIsLoading(false)
+      // Auto-play when track is ready
+      if (isPlaying) {
+        audio.play().catch(console.error)
       }
     }
-  }, [currentTrackIndex, currentTrack, hasUserInteracted, autoPlayBlocked])
+
+    const handleError = () => {
+      setIsLoading(false)
+      console.error("Error loading audio file")
+    }
+
+    audio.addEventListener("loadeddata", handleLoadedData)
+    audio.addEventListener("timeupdate", handleTimeUpdate)
+    audio.addEventListener("ended", handleEnded)
+    audio.addEventListener("canplay", handleCanPlay)
+    audio.addEventListener("error", handleError)
+
+    return () => {
+      audio.removeEventListener("loadeddata", handleLoadedData)
+      audio.removeEventListener("timeupdate", handleTimeUpdate)
+      audio.removeEventListener("ended", handleEnded)
+      audio.removeEventListener("canplay", handleCanPlay)
+      audio.removeEventListener("error", handleError)
+    }
+  }, [isPlaying])
 
   const formatTime = (seconds: number) => {
     if (isNaN(seconds)) return "0:00"
@@ -164,45 +122,33 @@ export default function MusicPlayer() {
   const handlePlayPause = async () => {
     if (!audioRef.current) return
 
-    setHasUserInteracted(true)
-
     try {
       if (isPlaying) {
         audioRef.current.pause()
         setIsPlaying(false)
       } else {
-        const playPromise = audioRef.current.play()
-        if (playPromise !== undefined) {
-          await playPromise
-          setIsPlaying(true)
-          setAutoPlayBlocked(false)
-        }
+        await audioRef.current.play()
+        setIsPlaying(true)
       }
     } catch (error) {
-      console.error("Playback error:", error)
-      setIsPlaying(false)
-      toast({
-        title: "Playback Error",
-        description: "Unable to play this track. Please try again.",
-        variant: "destructive",
-      })
+      console.error("Error playing audio:", error)
     }
   }
 
   const handlePrevious = () => {
     const newIndex = currentTrackIndex === 0 ? PLAYLIST.length - 1 : currentTrackIndex - 1
     setCurrentTrackIndex(newIndex)
-    setHasUserInteracted(true)
+    setCurrentTime(0)
   }
 
   const handleNext = () => {
     const newIndex = currentTrackIndex === PLAYLIST.length - 1 ? 0 : currentTrackIndex + 1
     setCurrentTrackIndex(newIndex)
-    setHasUserInteracted(true)
+    setCurrentTime(0)
   }
 
   const handleSeek = (value: number[]) => {
-    if (audioRef.current && !isNaN(value[0])) {
+    if (audioRef.current) {
       audioRef.current.currentTime = value[0]
       setCurrentTime(value[0])
     }
@@ -231,33 +177,25 @@ export default function MusicPlayer() {
 
   const handleTrackSelect = (index: number) => {
     setCurrentTrackIndex(index)
-    setHasUserInteracted(true)
+    setCurrentTime(0)
+    setIsPlaying(true) // Auto-play when track is selected
   }
 
   return (
     <div className="space-y-6">
       {/* Current track info */}
       <div className="flex items-center gap-4">
-        <div className="h-20 w-20 rounded-md overflow-hidden flex-shrink-0 relative">
+        <div className="h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
           <img
             src={currentTrack.cover || "/placeholder.svg"}
             alt={currentTrack.title}
             className="h-full w-full object-cover"
           />
-          {isLoading && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 text-white animate-spin" />
-            </div>
-          )}
         </div>
         <div className="flex-1">
           <h3 className="font-semibold text-lg text-purple-800">{currentTrack.title}</h3>
           <p className="text-gray-600">{currentTrack.artist}</p>
-          {autoPlayBlocked && hasUserInteracted && (
-            <Badge variant="outline" className="mt-1 text-xs text-orange-600 border-orange-300">
-              Auto-play blocked - Click play
-            </Badge>
-          )}
+          {isLoading && <p className="text-sm text-gray-500">Loading...</p>}
         </div>
       </div>
 
@@ -273,7 +211,7 @@ export default function MusicPlayer() {
           step={1}
           onValueChange={handleSeek}
           className="cursor-pointer"
-          disabled={!duration}
+          disabled={isLoading}
         />
         <div className="flex items-center justify-center gap-4 mt-4">
           <Button
@@ -294,7 +232,7 @@ export default function MusicPlayer() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
             ) : isPlaying ? (
               <Pause className="h-6 w-6" />
             ) : (
@@ -342,62 +280,36 @@ export default function MusicPlayer() {
           {PLAYLIST.map((track, index) => (
             <Card
               key={track.id}
-              className={`cursor-pointer hover:bg-pink-50 transition-all duration-200 ${
-                index === currentTrackIndex
-                  ? "border-pink-400 bg-pink-50 shadow-md ring-2 ring-pink-200"
-                  : "border-gray-200 hover:border-pink-300"
+              className={`cursor-pointer hover:bg-pink-50 transition-colors ${
+                index === currentTrackIndex ? "border-pink-400 bg-pink-50" : "border-gray-200"
               }`}
               onClick={() => handleTrackSelect(index)}
             >
               <CardContent className="p-3 flex items-center gap-3">
-                <div className="h-10 w-10 rounded overflow-hidden flex-shrink-0 relative">
+                <div className="h-10 w-10 rounded overflow-hidden flex-shrink-0">
                   <img
                     src={track.cover || "/placeholder.svg"}
                     alt={track.title}
                     className="h-full w-full object-cover"
                   />
-                  {index === currentTrackIndex && isPlaying && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                    </div>
-                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4
-                    className={`font-medium text-sm truncate ${
-                      index === currentTrackIndex ? "text-pink-700" : "text-purple-800"
-                    }`}
-                  >
-                    {track.title}
-                  </h4>
+                  <h4 className="font-medium text-sm text-purple-800 truncate">{track.title}</h4>
                   <p className="text-xs text-gray-500 truncate">{track.artist}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  {index === currentTrackIndex && isPlaying && (
-                    <Badge variant="default" className="text-xs bg-pink-500">
-                      Playing
-                    </Badge>
-                  )}
-                  <div className="text-xs text-gray-500">{formatTime(track.duration)}</div>
-                </div>
+                {index === currentTrackIndex && isPlaying && (
+                  <div className="text-pink-500">
+                    <Play className="h-4 w-4 fill-current" />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
-      {/* Instructions for first-time users */}
-      {!hasUserInteracted && (
-        <Card className="border-2 border-blue-200 bg-blue-50">
-          <CardContent className="p-4 text-center">
-            <p className="text-sm text-blue-700">
-              🎵 Click on any song or the play button to start the birthday playlist!
-              <br />
-              <span className="text-xs">Note: Auto-play will work after your first interaction.</span>
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Audio element */}
+      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" className="hidden" />
     </div>
   )
 }
