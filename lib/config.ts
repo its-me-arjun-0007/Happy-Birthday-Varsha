@@ -1,14 +1,21 @@
-// Configuration file for the birthday website
+// lib/config.ts
+// Central configuration for Varsha's birthday site.
+// Extend this object as you add more configurable settings.
+
 export const config = {
-  // Replace with Varsha's actual email address
-  recipientEmail: "95ych00d1y4n@gmail.com",
-
-  // Replace with Varsha's actual birthday date (YYYY-MM-DD format)
-  birthdayDate: "2025-07-03T00:00:00",
-
-  // Email settings
-  emailSettings: {
-    fromName: "Varsha's Birthday Website",
-    fromEmail: "arjunanil4668@gmail.com", // Replace with your verified Resend domain
-  },
+  /**
+   * Birthday date in ISO-8601 format (UTC).
+   * Update this if the celebration date changes.
+   */
+  birthdayDate: "2025-07-03T00:00:00Z",
 }
+
+/**
+ * Convenience type reflecting the current shape of `config`.
+ * Allows IntelliSense & type-safety when the config object grows.
+ */
+export type Config = typeof config
+
+// You can also import the default export if preferred:
+//   import config from "@/lib/config"
+export default config
