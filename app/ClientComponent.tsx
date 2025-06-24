@@ -35,8 +35,8 @@ export default function ClientComponent() {
               <Image
                 src="https://files.catbox.moe/yi8hi2.png?height=120&width=120"
                 alt="Balloon decoration"
-                width={120}
-                height={120}
+                width={118}
+                height={118}
                 className="drop-shadow-lg"
               />
             </div>
@@ -44,8 +44,8 @@ export default function ClientComponent() {
               <Image
                 src="https://files.catbox.moe/a9bl7d.png?height=130&width=130"
                 alt="Balloon decoration"
-                width={130}
-                height={130}
+                width={120}
+                height={120}
                 className="drop-shadow-lg"
               />
             </div>
@@ -176,7 +176,7 @@ export default function ClientComponent() {
                       </h2>
                       <Play className="h-7 w-7 text-indigo-500" />
                     </div>
-                    <p className="text-gray-600 text-lg">Relive the special moments through moving pictures</p>
+                    <p className="text-gray-600 text-lg">Special moments through moving pictures</p>
                   </div>
                   <VideoGallery />
                 </CardContent>
