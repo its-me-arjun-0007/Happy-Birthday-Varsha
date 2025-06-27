@@ -4,37 +4,44 @@ import { useState } from "react"
 import Image from "next/image"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { X } from "lucide-react"
+import { blobAssets } from "@/lib/blob-assets"
 
-// Sample photos - in a real app, these would be actual photos of Varsha
+// Sample photos - using centralized blob assets
 const PHOTOS = [
   {
     id: 1,
-    src: "https://files.catbox.moe/nnqroj.jpg?height=400&width°600",
+    src: blobAssets.photos.photo1,
+    alt: "Varsha's beautiful moment",
     caption: "❤️",
   },
   {
     id: 2,
-    src: "https://files.catbox.moe/wa1vpn.jpg?height=400&width=600",
+    src: blobAssets.photos.photo2,
+    alt: "Varsha's sweet smile",
     caption: "❤️",
   },
   {
     id: 3,
-    src: "https://files.catbox.moe/450wcf.jpg?height=400&width=600",
+    src: blobAssets.photos.photo3,
+    alt: "Varsha's lovely photo",
     caption: "❤️",
   },
   {
     id: 4,
-    src: "https://files.catbox.moe/fy9eg2.jpg?height=400&width=600",
+    src: blobAssets.photos.photo4,
+    alt: "Varsha's gorgeous picture",
     caption: "❤️",
   },
   {
     id: 5,
-    src: "https://files.catbox.moe/ubbyew.jpg?height=400&width=600",
+    src: blobAssets.photos.photo5,
+    alt: "Varsha's wonderful moment",
     caption: "❤️",
   },
   {
     id: 6,
-    src: "https://files.catbox.moe/gxs8xu.jpg?height=400&width=600",
+    src: blobAssets.photos.photo6,
+    alt: "Varsha's amazing photo",
     caption: "❤️",
   },
 ]
@@ -56,6 +63,8 @@ export default function PhotoGallery() {
               alt={photo.alt}
               fill
               className="object-cover transition-transform group-hover:scale-110"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              priority={photo.id <= 3} // Prioritize first 3 images
             />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-3">
               <p className="text-white text-sm font-medium text-center">{photo.caption}</p>
@@ -82,6 +91,7 @@ export default function PhotoGallery() {
                   alt={selectedPhoto.alt}
                   fill
                   className="object-contain"
+                  sizes="90vw"
                 />
               </div>
               <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-4 text-center">

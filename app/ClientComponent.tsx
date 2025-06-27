@@ -10,6 +10,7 @@ import MusicPlayer from "@/components/music-player"
 import PhotoGallery from "@/components/photo-gallery"
 import VideoGallery from "@/components/video-gallery"
 import { config } from "@/lib/config"
+import { blobAssets } from "@/lib/blob-assets"
 
 export default function ClientComponent() {
   return (
@@ -29,11 +30,9 @@ export default function ClientComponent() {
         <div className="max-w-6xl mx-auto">
           {/* Floating decorative elements */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-            <div className="absolute top-8 left-8 opacity-80
-            animate-bounce
-            delay-300">
+            <div className="absolute top-8 left-8 opacity-80 animate-bounce delay-300">
               <Image
-                src="https://files.catbox.moe/yi8hi2.png?height=120&width=120"
+                src={blobAssets.decorations.balloon1 || "/placeholder.svg"}
                 alt="Balloon decoration"
                 width={118}
                 height={118}
@@ -42,7 +41,7 @@ export default function ClientComponent() {
             </div>
             <div className="absolute top-8 right-8 opacity-80 animate-bounce delay-300">
               <Image
-                src="https://files.catbox.moe/a9bl7d.png?height=130&width=130"
+                src={blobAssets.decorations.balloon2 || "/placeholder.svg"}
                 alt="Balloon decoration"
                 width={120}
                 height={120}
@@ -288,10 +287,14 @@ export default function ClientComponent() {
       {/* Custom CSS for animations */}
       <style jsx>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
         }
-        
+
         .animate-float {
           animation: float 3s ease-in-out infinite;
         }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
+import { blobAssets } from "@/lib/blob-assets"
 
 interface Video {
   id: string
@@ -21,49 +22,49 @@ const videoData: Video[] = [
   {
     id: "1",
     title: "Dance Performance",
-    thumbnail: "/thumbnails/thumb-1.jpg",
+    thumbnail: blobAssets.videoThumbnails.thumb1,
     // duration: "2:45",
-    videoUrl: "https://files.catbox.moe/nl70vd.mp4",
+    videoUrl: blobAssets.videos.video1,
     type: "video/mp4",
   },
   {
     id: "2",
     title: "❤️",
-    thumbnail: "/thumbnails/thumb-2.jpg",
+    thumbnail: blobAssets.videoThumbnails.thumb2,
     // duration: "1:30",
-    videoUrl: "https://files.catbox.moe/zggvr5.mp4",
+    videoUrl: blobAssets.videos.video2,
     type: "video/mp4",
   },
   {
     id: "3",
     title: "🧡",
-    thumbnail: "/thumbnails/thumb-3.jpg",
+    thumbnail: blobAssets.videoThumbnails.thumb3,
     // duration: "3:20",
-    videoUrl: "https://files.catbox.moe/k4zk03.mp4",
+    videoUrl: blobAssets.videos.video3,
     type: "video/mp4",
   },
   {
     id: "4",
     title: "💚",
-    thumbnail: "/thumbnails/thumb-4.jpg",
+    thumbnail: blobAssets.videoThumbnails.thumb4,
     // duration: "2:15",
-    videoUrl: "https://files.catbox.moe/eapza2.mp4",
+    videoUrl: blobAssets.videos.video4,
     type: "video/mp4",
   },
   {
     id: "5",
     title: "💙",
-    thumbnail: "/thumbnails/thumb-5.jpg",
+    thumbnail: blobAssets.videoThumbnails.thumb5,
     // duration: "4:10",
-    videoUrl: "https://files.catbox.moe/n216d9.mp4",
+    videoUrl: blobAssets.videos.video5,
     type: "video/mp4",
   },
   {
     id: "6",
     title: "💜",
-    thumbnail: "/thumbnails/thumb-6.jpg",
+    thumbnail: blobAssets.videoThumbnails.thumb6,
     // duration: "5:30",
-    videoUrl: "https://files.catbox.moe/072kf9.mp4",
+    videoUrl: blobAssets.videos.video6,
     type: "video/mp4",
   },
 ]

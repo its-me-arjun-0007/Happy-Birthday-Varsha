@@ -7,40 +7,41 @@ import { Slider } from "@/components/ui/slider"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { blobAssets } from "@/lib/blob-assets"
 
-// Updated playlist with real audio URLs
+// Updated playlist with centralized blob assets
 const PLAYLIST = [
   {
     id: 1,
     title: "Happy Birthday Anna Cutie",
     artist: "Tung Tulip",
     duration: 210,
-    audioUrl: "https://files.catbox.moe/u9twdd.mp3",
-    cover: "https://files.catbox.moe/3m0neu.jpg?height=80&width=80",
+    audioUrl: blobAssets.music.song1.audio,
+    cover: blobAssets.music.song1.cover,
   },
   {
     id: 2,
     title: "Senjitaley",
     artist: "Remo",
     duration: 245,
-    audioUrl: "https://files.catbox.moe/bbo9ig.mp3",
-    cover: "https://files.catbox.moe/wne5n9.jpg?height=80&width=80",
+    audioUrl: blobAssets.music.song2.audio,
+    cover: blobAssets.music.song2.cover,
   },
   {
     id: 3,
     title: "Nee kavithaigala",
     artist: "Maragatha Naanayam",
     duration: 183,
-    audioUrl: "https://files.catbox.moe/4dxt66.mp3",
-    cover: "https://files.catbox.moe/0ja0i5.jpg?height=80&width=80",
+    audioUrl: blobAssets.music.song3.audio,
+    cover: blobAssets.music.song3.cover,
   },
   {
     id: 4,
     title: "Sahibaa",
     artist: "Anarkali",
     duration: 237,
-    audioUrl: "https://files.catbox.moe/h8djbg.mp3",
-    cover: "https://files.catbox.moe/nvrvne.jpg?height=80&width=80",
+    audioUrl: blobAssets.music.song4.audio,
+    cover: blobAssets.music.song4.cover,
   },
 ]
 
@@ -65,6 +66,7 @@ export default function MusicPlayer() {
       audioRef.current = new Audio()
       audioRef.current.preload = "metadata"
       audioRef.current.volume = volume / 100
+      audioRef.current.crossOrigin = "anonymous"
 
       // Set up event listeners
       const audio = audioRef.current
