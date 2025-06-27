@@ -78,9 +78,7 @@ export default function ClientComponent() {
 
             {/* Responsive Notice */}
             <div className="mt-4 text-center">
-              <p className="text-xs text-gray-500">
-                🎵 Video plays with sound • Click to replay when finished • Optimized for all devices
-              </p>
+              
             </div>
 
             <div className="max-w-3xl mx-auto">

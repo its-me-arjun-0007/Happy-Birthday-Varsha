@@ -92,3 +92,234 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Enhanced video player controls */
+.video-controls {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.video-controls:hover {
+  opacity: 1;
+}
+
+/* Custom slider styles for video progress */
+[data-radix-slider-root] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  touch-action: none;
+}
+
+[data-radix-slider-root][data-orientation="horizontal"] {
+  height: 20px;
+}
+
+[data-radix-slider-track] {
+  position: relative;
+  flex-grow: 1;
+  border-radius: 9999px;
+}
+
+[data-radix-slider-track][data-orientation="horizontal"] {
+  height: 4px;
+}
+
+[data-radix-slider-range] {
+  position: absolute;
+  border-radius: 9999px;
+  height: 100%;
+}
+
+[data-radix-slider-thumb] {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: grab;
+}
+
+[data-radix-slider-thumb]:active {
+  cursor: grabbing;
+}
+
+[data-radix-slider-thumb]:focus {
+  outline: none;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 640px) {
+  [data-radix-slider-thumb] {
+    width: 24px;
+    height: 24px;
+  }
+
+  [data-radix-slider-track][data-orientation="horizontal"] {
+    height: 6px;
+  }
+}
+
+/* Fullscreen video improvements */
+.video-container:fullscreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: black;
+}
+
+.video-container:fullscreen video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Buffer progress indicator */
+.buffer-progress {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+/* Control button hover effects */
+.control-button {
+  transition: all 0.2s ease;
+}
+
+.control-button:hover {
+  transform: scale(1.05);
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.control-button:active {
+  transform: scale(0.95);
+}
+
+/* Refined video player controls */
+.video-controls-refined {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.video-controls-refined:hover {
+  backdrop-filter: blur(8px);
+}
+
+/* Compact slider styles for video progress */
+[data-radix-slider-root] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  touch-action: none;
+  cursor: pointer;
+}
+
+[data-radix-slider-root][data-orientation="horizontal"] {
+  height: 12px;
+}
+
+[data-radix-slider-track] {
+  position: relative;
+  flex-grow: 1;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+[data-radix-slider-track][data-orientation="horizontal"] {
+  height: 2px;
+}
+
+[data-radix-slider-range] {
+  position: absolute;
+  border-radius: 9999px;
+  height: 100%;
+  transition: all 0.2s ease;
+}
+
+[data-radix-slider-thumb] {
+  display: block;
+  border-radius: 50%;
+  cursor: grab;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.9;
+}
+
+[data-radix-slider-thumb]:hover {
+  opacity: 1;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+}
+
+[data-radix-slider-thumb]:active {
+  cursor: grabbing;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.15);
+}
+
+[data-radix-slider-thumb]:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive refinements */
+@media (max-width: 640px) {
+  [data-radix-slider-thumb] {
+    width: 14px;
+    height: 14px;
+  }
+
+  [data-radix-slider-track][data-orientation="horizontal"] {
+    height: 3px;
+  }
+
+  [data-radix-slider-root][data-orientation="horizontal"] {
+    height: 16px;
+  }
+}
+
+@media (min-width: 641px) {
+  [data-radix-slider-thumb] {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Enhanced control button styles */
+.video-control-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(4px);
+}
+
+.video-control-btn:hover {
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.video-control-btn:active {
+  transform: scale(0.95);
+}
+
+/* Refined fullscreen improvements */
+.video-container:fullscreen .video-controls-refined {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+}
+
+/* Subtle buffer progress */
+.buffer-progress-refined {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Improved focus states for accessibility */
+.video-control-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for all interactive elements */
+.video-interactive {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.video-interactive:hover {
+  transform: translateY(-1px);
+}
