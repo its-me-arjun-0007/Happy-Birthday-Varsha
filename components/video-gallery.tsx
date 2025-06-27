@@ -1,7 +1,19 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { Play, Pause, Volume2, VolumeX, Maximize, SkipBack, SkipForward, RotateCcw, AlertCircle } from "lucide-react"
+import { useState, useRef, useEffect, useCallback } from "react"
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  SkipBack,
+  SkipForward,
+  RotateCcw,
+  AlertCircle,
+  Wifi,
+  WifiOff,
+} from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,58 +28,114 @@ interface Video {
   duration: string
   videoUrl: string
   type?: string
+  size?: string // File size for display
 }
 
+// Enhanced video data with quality indicators
 const videoData: Video[] = [
   {
     id: "1",
     title: "Dance Performance",
     thumbnail: blobAssets.videoThumbnails.thumb1,
-    // duration: "2:45",
     videoUrl: blobAssets.videos.video1,
     type: "video/mp4",
+    size: "~15MB",
   },
   {
     id: "2",
     title: "❤️",
     thumbnail: blobAssets.videoThumbnails.thumb2,
-    // duration: "1:30",
     videoUrl: blobAssets.videos.video2,
     type: "video/mp4",
+    size: "~12MB",
   },
   {
     id: "3",
     title: "🧡",
     thumbnail: blobAssets.videoThumbnails.thumb3,
-    // duration: "3:20",
     videoUrl: blobAssets.videos.video3,
     type: "video/mp4",
+    size: "~18MB",
   },
   {
     id: "4",
     title: "💚",
     thumbnail: blobAssets.videoThumbnails.thumb4,
-    // duration: "2:15",
     videoUrl: blobAssets.videos.video4,
     type: "video/mp4",
+    size: "~14MB",
   },
   {
     id: "5",
     title: "💙",
     thumbnail: blobAssets.videoThumbnails.thumb5,
-    // duration: "4:10",
     videoUrl: blobAssets.videos.video5,
     type: "video/mp4",
+    size: "~20MB",
   },
   {
     id: "6",
     title: "💜",
     thumbnail: blobAssets.videoThumbnails.thumb6,
-    // duration: "5:30",
     videoUrl: blobAssets.videos.video6,
     type: "video/mp4",
+    size: "~16MB",
   },
 ]
+
+// Network quality detection
+const useNetworkQuality = () => {
+  const [networkQuality, setNetworkQuality] = useState<"fast" | "slow" | "offline">("fast")
+  const [connectionType, setConnectionType] = useState<string>("unknown")
+
+  useEffect(() => {
+    // Check if Network Information API is available
+    if ("connection" in navigator) {
+      const connection = (navigator as any).connection
+
+      const updateConnectionInfo = () => {
+        setConnectionType(connection.effectiveType || "unknown")
+
+        // Determine quality based on effective connection type
+        if (connection.effectiveType === "4g") {
+          setNetworkQuality("fast")
+        } else if (connection.effectiveType === "3g" || connection.effectiveType === "2g") {
+          setNetworkQuality("slow")
+        } else {
+          setNetworkQuality("fast") // Default to fast for unknown
+        }
+      }
+
+      updateConnectionInfo()
+      connection.addEventListener("change", updateConnectionInfo)
+
+      return () => {
+        connection.removeEventListener("change", updateConnectionInfo)
+      }
+    }
+
+    // Fallback: Simple network speed test
+    const testNetworkSpeed = async () => {
+      try {
+        const startTime = Date.now()
+        await fetch("/placeholder.svg?cache=" + Math.random(), {
+          method: "HEAD",
+          cache: "no-cache",
+        })
+        const endTime = Date.now()
+        const duration = endTime - startTime
+
+        setNetworkQuality(duration < 500 ? "fast" : "slow")
+      } catch {
+        setNetworkQuality("offline")
+      }
+    }
+
+    testNetworkSpeed()
+  }, [])
+
+  return { networkQuality, connectionType }
+}
 
 export default function VideoGallery() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
@@ -77,27 +145,68 @@ export default function VideoGallery() {
   const [currentTime, setCurrentTime] = useState([0])
   const [duration, setDuration] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [isBuffering, setIsBuffering] = useState(false)
+  const [bufferProgress, setBufferProgress] = useState(0)
   const [hasError, setHasError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [isVideoReady, setIsVideoReady] = useState(false)
+  const [playbackQuality, setPlaybackQuality] = useState<"auto" | "high" | "medium" | "low">("auto")
+  const [preloadedVideos, setPreloadedVideos] = useState<Set<string>>(new Set())
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const { toast } = useToast()
+  const { networkQuality, connectionType } = useNetworkQuality()
 
-  // Initialize video element and event listeners
+  // Preload next/previous videos based on network quality
+  const preloadAdjacentVideos = useCallback(() => {
+    if (!selectedVideo || networkQuality === "slow") return
+
+    const currentIndex = videoData.findIndex((v) => v.id === selectedVideo.id)
+    const videosToPreload = []
+
+    // Preload next video
+    if (currentIndex < videoData.length - 1) {
+      videosToPreload.push(videoData[currentIndex + 1])
+    }
+    // Preload previous video
+    if (currentIndex > 0) {
+      videosToPreload.push(videoData[currentIndex - 1])
+    }
+
+    videosToPreload.forEach((video) => {
+      if (!preloadedVideos.has(video.id)) {
+        const preloadVideo = document.createElement("video")
+        preloadVideo.preload = "metadata"
+        preloadVideo.src = video.videoUrl
+        preloadVideo.load()
+
+        preloadVideo.addEventListener("loadedmetadata", () => {
+          setPreloadedVideos((prev) => new Set([...prev, video.id]))
+        })
+      }
+    })
+  }, [selectedVideo, networkQuality, preloadedVideos])
+
+  // Enhanced video initialization with buffering optimization
   useEffect(() => {
     const video = videoRef.current
     if (!video || !selectedVideo) return
 
     setIsLoading(true)
+    setIsBuffering(false)
     setHasError(false)
     setIsVideoReady(false)
     setErrorMessage("")
+    setBufferProgress(0)
 
     // Reset video state
     video.currentTime = 0
     setCurrentTime([0])
     setIsPlaying(false)
+
+    // Configure video for optimal buffering
+    video.preload = networkQuality === "fast" ? "auto" : "metadata"
+    video.crossOrigin = "anonymous"
 
     // Set video source
     video.src = selectedVideo.videoUrl
@@ -111,11 +220,59 @@ export default function VideoGallery() {
         duration: video.duration,
         videoWidth: video.videoWidth,
         videoHeight: video.videoHeight,
+        networkType: connectionType,
       })
     }
 
     const handleTimeUpdate = () => {
       setCurrentTime([video.currentTime || 0])
+
+      // Update buffer progress
+      if (video.buffered.length > 0) {
+        const bufferedEnd = video.buffered.end(video.buffered.length - 1)
+        const progress = (bufferedEnd / video.duration) * 100
+        setBufferProgress(progress)
+      }
+    }
+
+    const handleProgress = () => {
+      if (video.buffered.length > 0) {
+        const bufferedEnd = video.buffered.end(video.buffered.length - 1)
+        const progress = (bufferedEnd / video.duration) * 100
+        setBufferProgress(progress)
+      }
+    }
+
+    const handleWaiting = () => {
+      setIsBuffering(true)
+      console.log("Video buffering...")
+    }
+
+    const handleCanPlay = () => {
+      setIsLoading(false)
+      setIsBuffering(false)
+      setIsVideoReady(true)
+      console.log("Video can play")
+    }
+
+    const handleCanPlayThrough = () => {
+      setIsLoading(false)
+      setIsBuffering(false)
+      console.log("Video can play through")
+    }
+
+    const handleStalled = () => {
+      setIsBuffering(true)
+      console.log("Video stalled - network issue detected")
+
+      toast({
+        title: "Buffering",
+        description: "Video is loading. This may take a moment on slower connections.",
+      })
+    }
+
+    const handleSuspend = () => {
+      console.log("Video loading suspended")
     }
 
     const handleEnded = () => {
@@ -133,7 +290,7 @@ export default function VideoGallery() {
             message = "Video playback was aborted"
             break
           case MediaError.MEDIA_ERR_NETWORK:
-            message = "Network error occurred while loading video"
+            message = "Network error - check your internet connection"
             break
           case MediaError.MEDIA_ERR_DECODE:
             message = "Video format not supported or corrupted"
@@ -148,6 +305,7 @@ export default function VideoGallery() {
 
       console.error("Video error:", error, e)
       setIsLoading(false)
+      setIsBuffering(false)
       setHasError(true)
       setErrorMessage(message)
       setIsVideoReady(false)
@@ -161,40 +319,30 @@ export default function VideoGallery() {
 
     const handleLoadStart = () => {
       setIsLoading(true)
-    }
-
-    const handleCanPlay = () => {
-      setIsLoading(false)
-      setIsVideoReady(true)
-      console.log("Video can play")
-    }
-
-    const handleWaiting = () => {
-      setIsLoading(true)
-    }
-
-    const handleCanPlayThrough = () => {
-      setIsLoading(false)
-      console.log("Video can play through")
+      setIsBuffering(false)
     }
 
     const handlePlay = () => {
       setIsPlaying(true)
+      setIsBuffering(false)
     }
 
     const handlePause = () => {
       setIsPlaying(false)
     }
 
-    // Add event listeners
+    // Add all event listeners
     video.addEventListener("loadedmetadata", handleLoadedMetadata)
     video.addEventListener("timeupdate", handleTimeUpdate)
+    video.addEventListener("progress", handleProgress)
+    video.addEventListener("waiting", handleWaiting)
+    video.addEventListener("canplay", handleCanPlay)
+    video.addEventListener("canplaythrough", handleCanPlayThrough)
+    video.addEventListener("stalled", handleStalled)
+    video.addEventListener("suspend", handleSuspend)
     video.addEventListener("ended", handleEnded)
     video.addEventListener("error", handleError)
     video.addEventListener("loadstart", handleLoadStart)
-    video.addEventListener("canplay", handleCanPlay)
-    video.addEventListener("waiting", handleWaiting)
-    video.addEventListener("canplaythrough", handleCanPlayThrough)
     video.addEventListener("play", handlePlay)
     video.addEventListener("pause", handlePause)
 
@@ -202,20 +350,28 @@ export default function VideoGallery() {
     video.volume = volume[0] / 100
     video.muted = isMuted
 
+    // Preload adjacent videos after a delay
+    const preloadTimer = setTimeout(preloadAdjacentVideos, 2000)
+
     return () => {
       // Cleanup event listeners
       video.removeEventListener("loadedmetadata", handleLoadedMetadata)
       video.removeEventListener("timeupdate", handleTimeUpdate)
+      video.removeEventListener("progress", handleProgress)
+      video.removeEventListener("waiting", handleWaiting)
+      video.removeEventListener("canplay", handleCanPlay)
+      video.removeEventListener("canplaythrough", handleCanPlayThrough)
+      video.removeEventListener("stalled", handleStalled)
+      video.removeEventListener("suspend", handleSuspend)
       video.removeEventListener("ended", handleEnded)
       video.removeEventListener("error", handleError)
       video.removeEventListener("loadstart", handleLoadStart)
-      video.removeEventListener("canplay", handleCanPlay)
-      video.removeEventListener("waiting", handleWaiting)
-      video.removeEventListener("canplaythrough", handleCanPlayThrough)
       video.removeEventListener("play", handlePlay)
       video.removeEventListener("pause", handlePause)
+
+      clearTimeout(preloadTimer)
     }
-  }, [selectedVideo])
+  }, [selectedVideo, networkQuality, connectionType])
 
   // Handle volume changes
   useEffect(() => {
@@ -230,6 +386,7 @@ export default function VideoGallery() {
     setSelectedVideo(video)
     setCurrentTime([0])
     setIsPlaying(false)
+    setBufferProgress(0)
   }
 
   const togglePlayPause = async () => {
@@ -240,13 +397,28 @@ export default function VideoGallery() {
       if (isPlaying) {
         video.pause()
       } else {
+        // Check if enough video is buffered before playing
+        if (video.buffered.length > 0) {
+          const bufferedEnd = video.buffered.end(video.buffered.length - 1)
+          const currentTime = video.currentTime
+
+          // If we don't have enough buffer ahead, show buffering state
+          if (bufferedEnd - currentTime < 5 && networkQuality === "slow") {
+            setIsBuffering(true)
+            toast({
+              title: "Buffering",
+              description: "Loading more video data for smooth playback...",
+            })
+          }
+        }
+
         await video.play()
       }
     } catch (error) {
       console.error("Play/pause error:", error)
       toast({
         title: "Playback Error",
-        description: "Unable to play video. Please try again.",
+        description: "Unable to play video. Please check your connection and try again.",
         variant: "destructive",
       })
     }
@@ -259,7 +431,26 @@ export default function VideoGallery() {
   const handleSeek = (value: number[]) => {
     const video = videoRef.current
     if (video && isVideoReady) {
-      video.currentTime = value[0]
+      const seekTime = value[0]
+
+      // Check if we're seeking to an unbuffered area
+      let isBuffered = false
+      for (let i = 0; i < video.buffered.length; i++) {
+        if (seekTime >= video.buffered.start(i) && seekTime <= video.buffered.end(i)) {
+          isBuffered = true
+          break
+        }
+      }
+
+      if (!isBuffered && networkQuality === "slow") {
+        setIsBuffering(true)
+        toast({
+          title: "Seeking",
+          description: "Loading video at new position...",
+        })
+      }
+
+      video.currentTime = seekTime
       setCurrentTime(value)
     }
   }
@@ -334,8 +525,41 @@ export default function VideoGallery() {
     }
   }
 
+  const getNetworkIcon = () => {
+    switch (networkQuality) {
+      case "fast":
+        return <Wifi className="h-4 w-4 text-green-500" />
+      case "slow":
+        return <Wifi className="h-4 w-4 text-yellow-500" />
+      case "offline":
+        return <WifiOff className="h-4 w-4 text-red-500" />
+      default:
+        return <Wifi className="h-4 w-4 text-gray-500" />
+    }
+  }
+
+  const getQualityRecommendation = () => {
+    if (networkQuality === "slow") {
+      return "Consider switching to a faster connection for better video quality"
+    }
+    return `Connection: ${connectionType.toUpperCase()} - Optimal for video streaming`
+  }
+
   return (
     <div className="space-y-6">
+      {/* Network Status Indicator */}
+      <Card className="border border-gray-200 bg-gray-50">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              {getNetworkIcon()}
+              <span className="font-medium">Network Status</span>
+            </div>
+            <div className="text-gray-600">{getQualityRecommendation()}</div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Video Player */}
       {selectedVideo && (
         <Card className="border-2 border-pink-200 overflow-hidden">
@@ -350,7 +574,7 @@ export default function VideoGallery() {
                       <div className="text-sm opacity-80">{errorMessage}</div>
                       <Button
                         variant="outline"
-                        className="mt-4 text-white border-white hover:bg-white hover:text-black"
+                        className="mt-4 text-white border-white hover:bg-white hover:text-black bg-transparent"
                         onClick={() => handleVideoSelect(selectedVideo)}
                       >
                         Retry
@@ -364,40 +588,63 @@ export default function VideoGallery() {
                     ref={videoRef}
                     className="w-full h-full object-contain"
                     crossOrigin="anonymous"
-                    preload="metadata"
+                    preload={networkQuality === "fast" ? "auto" : "metadata"}
                     playsInline
+                    poster={selectedVideo.thumbnail}
                   >
                     <source src={selectedVideo.videoUrl} type={selectedVideo.type || "video/mp4"} />
                     Your browser does not support the video tag.
                   </video>
 
-                  {isLoading && (
+                  {/* Loading/Buffering Overlay */}
+                  {(isLoading || isBuffering) && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <div className="text-center text-white">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                        <div className="text-lg">Loading video...</div>
+                        <div className="text-lg">{isLoading ? "Loading video..." : "Buffering..."}</div>
+                        {bufferProgress > 0 && (
+                          <div className="mt-2 text-sm opacity-80">Buffer: {Math.round(bufferProgress)}%</div>
+                        )}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Buffer Progress Indicator */}
+                  {bufferProgress > 0 && bufferProgress < 100 && !isLoading && (
+                    <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                      Buffer: {Math.round(bufferProgress)}%
                     </div>
                   )}
                 </>
               )}
             </div>
 
-            {/* Video Controls */}
+            {/* Enhanced Video Controls */}
             <div className="bg-gray-900 text-white p-4 space-y-4">
-              {/* Progress Bar */}
+              {/* Progress Bar with Buffer Indicator */}
               <div className="space-y-2">
-                <Slider
-                  value={currentTime}
-                  onValueChange={handleSeek}
-                  max={duration || 100}
-                  step={1}
-                  className="w-full"
-                  disabled={!isVideoReady}
-                />
+                <div className="relative">
+                  {/* Buffer progress background */}
+                  <div
+                    className="absolute top-0 left-0 h-full bg-gray-600 rounded"
+                    style={{ width: `${bufferProgress}%` }}
+                  />
+                  {/* Main progress slider */}
+                  <Slider
+                    value={currentTime}
+                    onValueChange={handleSeek}
+                    max={duration || 100}
+                    step={1}
+                    className="w-full relative z-10"
+                    disabled={!isVideoReady}
+                  />
+                </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>{formatTime(currentTime[0])}</span>
-                  <span>{formatTime(duration)}</span>
+                  <div className="flex items-center gap-2">
+                    {isBuffering && <span className="text-yellow-400">Buffering...</span>}
+                    <span>{formatTime(duration)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -431,7 +678,7 @@ export default function VideoGallery() {
                     className="text-white hover:bg-gray-700"
                     disabled={!isVideoReady || isLoading}
                   >
-                    {isLoading ? (
+                    {isLoading || isBuffering ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     ) : isPlaying ? (
                       <Pause className="h-5 w-5" />
@@ -495,16 +742,23 @@ export default function VideoGallery() {
 
               <div className="text-center">
                 <h3 className="font-semibold">{selectedVideo.title}</h3>
-                {isVideoReady && (
-                  <p className="text-xs text-gray-400 mt-1">{selectedVideo.type || "video/mp4"} • Ready to play</p>
-                )}
+                <div className="flex items-center justify-center gap-4 mt-1 text-xs text-gray-400">
+                  <span>{selectedVideo.type || "video/mp4"}</span>
+                  <span>{selectedVideo.size}</span>
+                  {isVideoReady && <span>Ready to play</span>}
+                  {preloadedVideos.has(selectedVideo.id) && (
+                    <Badge variant="outline" className="text-xs text-green-400 border-green-400">
+                      Preloaded
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Video Grid */}
+      {/* Enhanced Video Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {videoData.map((video) => (
           <Card
@@ -529,12 +783,22 @@ export default function VideoGallery() {
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-t-lg">
                   <Play className="h-12 w-12 text-white drop-shadow-lg" />
                 </div>
-                <Badge className="absolute top-2 right-2 bg-black/70 text-white backdrop-blur-sm">
-                  {video.duration}
+
+                {/* File size badge */}
+                <Badge className="absolute top-2 right-2 bg-black/70 text-white backdrop-blur-sm text-xs">
+                  {video.size}
                 </Badge>
+
+                {/* Status badges */}
                 {selectedVideo?.id === video.id && (
                   <Badge className="absolute top-2 left-2 bg-pink-500 text-white backdrop-blur-sm">
                     {isPlaying ? "Playing" : "Selected"}
+                  </Badge>
+                )}
+
+                {preloadedVideos.has(video.id) && selectedVideo?.id !== video.id && (
+                  <Badge className="absolute bottom-2 left-2 bg-green-500 text-white backdrop-blur-sm text-xs">
+                    Preloaded
                   </Badge>
                 )}
 
@@ -543,7 +807,10 @@ export default function VideoGallery() {
               </div>
               <div className="p-4">
                 <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">{video.title}</h3>
-                <p className="text-xs text-gray-500">{video.type || "video/mp4"}</p>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>{video.type || "video/mp4"}</span>
+                  <span>{video.size}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -556,16 +823,19 @@ export default function VideoGallery() {
         </div>
       )}
 
-      {/* Instructions */}
+      {/* Enhanced Instructions */}
       <Card className="border-2 border-blue-200 bg-blue-50">
-        <CardContent className="p-4 text-center">
-          <p className="text-sm text-blue-700">
-            🎬 Click on any video to start playing. Use the controls to navigate through the playlist.
-            <br />
-            <span className="text-xs">
-              Supported formats: MP4, WebM, OGG • Make sure your browser supports HTML5 video
-            </span>
-          </p>
+        <CardContent className="p-4">
+          <div className="text-center space-y-2">
+            <p className="text-sm text-blue-700">
+              🎬 Click on any video to start playing. Videos are optimized based on your connection speed.
+            </p>
+            <div className="text-xs text-blue-600 space-y-1">
+              <p>• Fast connections: Videos preload automatically for smooth playback</p>
+              <p>• Slower connections: Videos load on-demand to save bandwidth</p>
+              <p>• Buffer indicator shows loading progress for better experience</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

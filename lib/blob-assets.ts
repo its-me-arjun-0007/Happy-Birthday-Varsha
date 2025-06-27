@@ -57,6 +57,9 @@ export const blobAssets = {
     balloon1: "https://files.catbox.moe/yi8hi2.png",
     balloon2: "https://files.catbox.moe/a9bl7d.png",
   },
+
+  // Hero video for front page
+  heroVideo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1751030597793-cqGDMbETKlv9KYgNAqeuUtWcQZQTbQ.mp4",
 } as const
 
 // Helper function to get blob URL with fallback
@@ -76,3 +79,5 @@ export const getVideoUrl = (videoKey: keyof typeof blobAssets.videos) => blobAss
 export const getMusicUrl = (songKey: keyof typeof blobAssets.music) => blobAssets.music[songKey]
 
 export const getDecorationUrl = (decorKey: keyof typeof blobAssets.decorations) => blobAssets.decorations[decorKey]
+
+export const getHeroVideoUrl = () => blobAssets.heroVideo

@@ -11,6 +11,7 @@ import PhotoGallery from "@/components/photo-gallery"
 import VideoGallery from "@/components/video-gallery"
 import { config } from "@/lib/config"
 import { blobAssets } from "@/lib/blob-assets"
+import HeroVideo from "@/components/hero-video"
 
 export default function ClientComponent() {
   return (
@@ -25,8 +26,8 @@ export default function ClientComponent() {
         <div className="absolute bottom-20 right-10 w-28 h-28 bg-pink-300/20 rounded-full blur-xl animate-pulse delay-500"></div>
       </div>
 
-      {/* Hero Section */}
-      <section className="relative pt-12 pb-16 px-4">
+      {/* Hero Section with Video */}
+      <section className="relative pt-8 pb-12 px-4">
         <div className="max-w-6xl mx-auto">
           {/* Floating decorative elements */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
@@ -61,12 +62,25 @@ export default function ClientComponent() {
             </div>
           </div>
 
-          <div className="text-center relative z-10 space-y-6">
+          <div className="text-center relative z-10 space-y-8">
+            {/* Title */}
             <div className="space-y-4">
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent leading-tight">
                 Happy Birthday
               </h1>
               <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-pink-600 animate-pulse">Varsha! 🎉</h2>
+            </div>
+
+            {/* Hero Video */}
+            <div className="my-8">
+              <HeroVideo />
+            </div>
+
+            {/* Responsive Notice */}
+            <div className="mt-4 text-center">
+              <p className="text-xs text-gray-500">
+                🎵 Video plays with sound • Click to replay when finished • Optimized for all devices
+              </p>
             </div>
 
             <div className="max-w-3xl mx-auto">
