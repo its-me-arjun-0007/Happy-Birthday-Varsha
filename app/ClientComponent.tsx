@@ -76,11 +76,6 @@ export default function ClientComponent() {
               <HeroVideo />
             </div>
 
-            {/* Responsive Notice */}
-            <div className="mt-4 text-center">
-              
-            </div>
-
             <div className="max-w-3xl mx-auto">
               <p className="text-lg sm:text-xl lg:text-2xl text-gray-700 leading-relaxed font-medium">
                 Welcome to Varsha's magical birthday celebration!
@@ -141,8 +136,8 @@ export default function ClientComponent() {
                   className="flex items-center space-x-2 px-6 py-4 text-base font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
                 >
                   <Play className="h-5 w-5" />
-                  <span className="hidden sm:inline">Video Gallery</span>
-                  <span className="sm:hidden">Videos</span>
+                  <span className="hidden sm:inline">Reels</span>
+                  <span className="sm:hidden">Reels</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="music"
@@ -175,23 +170,11 @@ export default function ClientComponent() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="videos" className="mt-0">
-              <Card className="border-0 bg-white/70 backdrop-blur-md shadow-2xl rounded-3xl overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-50/80 via-white/50 to-indigo-50/80"></div>
-                <CardContent className="relative pt-8 pb-8 px-6 sm:px-8">
-                  <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center space-x-3 mb-4">
-                      <Play className="h-7 w-7 text-purple-500" />
-                      <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                        Videos
-                      </h2>
-                      <Play className="h-7 w-7 text-indigo-500" />
-                    </div>
-                    <p className="text-gray-600 text-lg">Special moments through moving pictures</p>
-                  </div>
-                  <VideoGallery />
-                </CardContent>
-              </Card>
+            <TabsContent value="videos" className="mt-0 -mx-4 sm:-mx-8 md:-mx-12 lg:-mx-16">
+              {/* Full-screen Reels experience */}
+              <div className="relative">
+                <VideoGallery />
+              </div>
             </TabsContent>
 
             <TabsContent value="music" className="mt-0">

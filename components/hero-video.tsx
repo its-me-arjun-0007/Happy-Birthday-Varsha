@@ -105,7 +105,7 @@ export default function HeroVideo() {
   useEffect(() => {
     const v = safeVideo()
 
-    v.muted = false
+    v.muted = true
     v.playsInline = true
     v.loop = false
     v.preload = "auto"
