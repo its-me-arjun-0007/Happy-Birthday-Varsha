@@ -13,13 +13,13 @@ export const blobAssets = {
   },
 
   // Video thumbnails (Varsha's photos)
-  videoThumbnails: {
-    thumb1: "/thumbnails/thumb-1.jpg", // Blue striped top selfie
-    thumb2: "/thumbnails/thumb-2.jpg", // Purple top with playful gesture
-    thumb3: "/thumbnails/thumb-3.jpg", // White patterned shirt at cafe
-    thumb4: "/thumbnails/thumb-4.jpg", // Traditional blue saree in garden
-    thumb5: "/thumbnails/thumb-5.jpg", // Artistic green top mood shot
-    thumb6: "/thumbnails/thumb-6.jpg", // Bright smile in graphic tee
+   videoThumbnails: {
+    // thumb1: "/thumbnails/thumb-1.jpg", // Blue striped top selfie
+    // thumb2: "/thumbnails/thumb-2.jpg", // Purple top with playful gesture
+    // thumb3: "/thumbnails/thumb-3.jpg", // White patterned shirt at cafe
+    // thumb4: "/thumbnails/thumb-4.jpg", // Traditional blue saree in garden
+    // thumb5: "/thumbnails/thumb-5.jpg", // Artistic green top mood shot
+    // thumb6: "/thumbnails/thumb-6.jpg", // Bright smile in graphic tee
   },
 
   // Video files
