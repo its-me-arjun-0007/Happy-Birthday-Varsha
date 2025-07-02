@@ -1,23 +1,30 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import {
   Heart,
   MessageCircle,
-  Send,
+  Share2,
   Bookmark,
   MoreHorizontal,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   AlertTriangle,
   RefreshCw,
   Wifi,
-  WifiOff,
   ImageIcon,
+  Search,
+  Filter,
+  XIcon,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Minimize,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { blobAssets } from "@/lib/blob-assets"
@@ -36,6 +43,11 @@ interface InstagramPost {
   timeAgo: string
   isLiked: boolean
   isSaved: boolean
+  category: string
+  quality: "high" | "medium" | "low"
+  dimensions: { width: number; height: number }
+  fileSize?: number
+  alt: string
 }
 
 interface Comment {
@@ -52,9 +64,10 @@ interface ImageLoadState {
   loaded: boolean
   error: boolean
   retryCount: number
+  progress: number
 }
 
-// Enhanced photo data with Instagram-style metadata and multiple images per post
+// Enhanced photo data with comprehensive metadata
 const instagramPosts: InstagramPost[] = [
   {
     id: "1",
@@ -62,78 +75,231 @@ const instagramPosts: InstagramPost[] = [
     userAvatar: blobAssets.photos.photo1,
     isVerified: true,
     location: "Home Sweet Home",
-    images: [blobAssets.photos.photo1, blobAssets.photos.photo2, blobAssets.photos.photo3],
-    caption: "Living my best life! ✨ Every moment is a blessing and I'm grateful for all the love and support.",
-    hashtags: ["#blessed", "#grateful", "#livingmybestlife", "#positivevibes"],
-    likes: 2847,
+    images: [blobAssets.photos.photo1],
+    caption:
+      "Embracing the beauty of coral florals and golden hour vibes! ✨🌸 Sometimes the simplest moments create the most beautiful memories.",
+    hashtags: ["#coral", "#florals", "#goldenhour", "#natural", "#beauty", "#memories", "#peaceful"],
+    likes: 3847,
     comments: [
       {
         id: "1",
         username: "bestfriend_sara",
-        text: "You look absolutely stunning! 😍",
+        text: "You look absolutely radiant! 😍✨",
         timeAgo: "2h",
-        likes: 12,
+        likes: 24,
         isLiked: false,
       },
-      { id: "2", username: "mom_love", text: "My beautiful daughter ❤️", timeAgo: "1h", likes: 25, isLiked: true },
+      {
+        id: "2",
+        username: "mom_love",
+        text: "My beautiful daughter, always glowing! ❤️",
+        timeAgo: "1h",
+        likes: 45,
+        isLiked: true,
+      },
     ],
     timeAgo: "3 hours ago",
     isLiked: false,
     isSaved: false,
+    category: "portrait",
+    quality: "high",
+    dimensions: { width: 1080, height: 1920 },
+    fileSize: 2.4,
+    alt: "Varsha in coral floral top, thoughtful pose with hand near face, natural outdoor lighting",
   },
   {
     id: "2",
     username: "varsha_official",
+    userAvatar: blobAssets.photos.photo2,
+    isVerified: true,
+    location: "Home Sweet Home",
+    images: [blobAssets.photos.photo2],
+    caption:
+      "Fresh mint vibes and natural glow! 🌿✨ Embracing the simple beauty of everyday moments with a touch of traditional elegance.",
+    hashtags: ["#mint", "#natural", "#glow", "#traditional", "#bindi", "#fresh", "#simple", "#elegant"],
+    likes: 4156,
+    comments: [
+      {
+        id: "1",
+        username: "fashion_guru",
+        text: "That natural glow is everything! 💚",
+        timeAgo: "4h",
+        likes: 31,
+        isLiked: false,
+      },
+      {
+        id: "2",
+        username: "cousin_priya",
+        text: "Love the traditional touch with the bindi! 🌟",
+        timeAgo: "3h",
+        likes: 28,
+        isLiked: true,
+      },
+    ],
+    timeAgo: "6 hours ago",
+    isLiked: true,
+    isSaved: true,
+    category: "selfie",
+    quality: "high",
+    dimensions: { width: 1080, height: 1920 },
+    fileSize: 2.1,
+    alt: "Varsha in mint green t-shirt, natural selfie with bindi, soft indoor lighting",
+  },
+  {
+    id: "3",
+    username: "varsha_official",
+    userAvatar: blobAssets.photos.photo3,
+    isVerified: true,
+    location: "Favorite Cafe",
+    images: [blobAssets.photos.photo3],
+    caption:
+      "Cafe vibes in my favorite patterned shirt! ☕✨ There's something magical about finding beauty in everyday places and moments.",
+    hashtags: ["#cafe", "#patterns", "#white", "#elegant", "#coffee", "#moments", "#style", "#classic"],
+    likes: 3892,
+    comments: [
+      {
+        id: "1",
+        username: "cafe_lover",
+        text: "Perfect cafe aesthetic! That shirt is gorgeous 🤍",
+        timeAgo: "5h",
+        likes: 19,
+        isLiked: false,
+      },
+      {
+        id: "2",
+        username: "style_icon",
+        text: "Classic elegance at its finest! 👑",
+        timeAgo: "4h",
+        likes: 33,
+        isLiked: true,
+      },
+    ],
+    timeAgo: "8 hours ago",
+    isLiked: true,
+    isSaved: false,
+    category: "lifestyle",
+    quality: "high",
+    dimensions: { width: 1080, height: 1920 },
+    fileSize: 2.8,
+    alt: "Varsha in white patterned shirt at cafe, elegant pose with warm ambient lighting",
+  },
+  {
+    id: "4",
+    username: "varsha_official",
     userAvatar: blobAssets.photos.photo4,
     isVerified: true,
     location: "Home Sweet Home",
-    images: [blobAssets.photos.photo4, blobAssets.photos.photo5],
-    caption: "Traditional vibes in the most beautiful setting! 🌺 Heritage fashion never goes out of style!",
-    hashtags: ["#traditional", "#saree", "#culture", "#heritage", "#royal"],
-    likes: 4156,
+    images: [blobAssets.photos.photo4],
+    caption:
+      "Purple power and playful vibes! 💜✨ Sometimes you just need to let your inner child shine through with some fun poses and bright colors!",
+    hashtags: ["#purple", "#playful", "#fun", "#vibes", "#bright", "#colors", "#joy", "#energy", "#positive"],
+    likes: 5234,
     comments: [
-      { id: "1", username: "fashion_guru", text: "Absolutely regal! 👑", timeAgo: "6h", likes: 31, isLiked: false },
+      {
+        id: "1",
+        username: "color_enthusiast",
+        text: "Purple looks amazing on you! Such positive energy 💜",
+        timeAgo: "6h",
+        likes: 42,
+        isLiked: false,
+      },
       {
         id: "2",
-        username: "grandma_love",
-        text: "You look like a princess! 🌺",
+        username: "happy_vibes",
+        text: "Your playful energy is contagious! Love this 🌟",
         timeAgo: "5h",
-        likes: 45,
+        likes: 38,
+        isLiked: true,
+      },
+    ],
+    timeAgo: "10 hours ago",
+    isLiked: false,
+    isSaved: true,
+    category: "fun",
+    quality: "high",
+    dimensions: { width: 1080, height: 1920 },
+    fileSize: 2.6,
+    alt: "Varsha in purple t-shirt, playful pose with hand gestures, bright indoor lighting",
+  },
+  {
+    id: "5",
+    username: "varsha_official",
+    userAvatar: blobAssets.photos.photo5,
+    isVerified: true,
+    location: "Outdoor Bliss",
+    images: [blobAssets.photos.photo5],
+    caption:
+      "Blue stripes and natural light creating the perfect outdoor selfie! 💙✨ Traditional meets modern with a touch of timeless elegance.",
+    hashtags: ["#blue", "#stripes", "#outdoor", "#natural", "#light", "#traditional", "#modern", "#timeless", "#bindi"],
+    likes: 4567,
+    comments: [
+      {
+        id: "1",
+        username: "outdoor_lover",
+        text: "Natural lighting is your best friend! Stunning 💙",
+        timeAgo: "7h",
+        likes: 35,
+        isLiked: false,
+      },
+      {
+        id: "2",
+        username: "traditional_beauty",
+        text: "Love how you blend traditional and modern so effortlessly! 🌟",
+        timeAgo: "6h",
+        likes: 41,
         isLiked: true,
       },
     ],
     timeAgo: "12 hours ago",
     isLiked: true,
-    isSaved: true,
+    isSaved: false,
+    category: "outdoor",
+    quality: "high",
+    dimensions: { width: 1080, height: 1920 },
+    fileSize: 2.3,
+    alt: "Varsha in blue striped top, outdoor selfie with natural lighting and traditional bindi",
   },
   {
-    id: "3",
+    id: "6",
     username: "varsha_official",
     userAvatar: blobAssets.photos.photo6,
     isVerified: true,
-    location: "Home Sweet Home",
+    location: "Cozy Corner",
     images: [blobAssets.photos.photo6],
-    caption: "Casual vibes, genuine smiles! 😊 Sometimes the best moments happen when you're just being yourself.",
-    hashtags: ["#casual", "#genuine", "#home", "#comfort", "#authentic"],
-    likes: 3892,
+    caption:
+      "Cozy hoodie vibes and soft lighting magic! 🤍✨ Sometimes the most comfortable moments create the most genuine smiles and peaceful energy.",
+    hashtags: ["#cozy", "#hoodie", "#white", "#soft", "#lighting", "#comfortable", "#genuine", "#peaceful", "#casual"],
+    likes: 6789,
     comments: [
       {
         id: "1",
-        username: "roommate_bestie",
-        text: "Home is where the heart is! 🏠❤️",
-        timeAgo: "2d",
-        likes: 19,
+        username: "cozy_vibes",
+        text: "This is pure comfort goals! Love the soft aesthetic 🤍",
+        timeAgo: "8h",
+        likes: 52,
         isLiked: false,
       },
-      { id: "2", username: "family_love", text: "Natural beauty! 😍", timeAgo: "1d", likes: 33, isLiked: true },
+      {
+        id: "2",
+        username: "peaceful_soul",
+        text: "Your genuine smile is everything! So peaceful and beautiful 😊",
+        timeAgo: "7h",
+        likes: 67,
+        isLiked: true,
+      },
     ],
-    timeAgo: "2 days ago",
+    timeAgo: "1 day ago",
     isLiked: true,
-    isSaved: false,
+    isSaved: true,
+    category: "casual",
+    quality: "high",
+    dimensions: { width: 1080, height: 1920 },
+    fileSize: 2.0,
+    alt: "Varsha in white hoodie, casual indoor selfie with soft lighting and genuine smile",
   },
 ]
 
-// Optimized Image Component with lazy loading and error handling
+// Optimized Image Component
 const OptimizedImage: React.FC<{
   src: string
   alt: string
@@ -141,12 +307,16 @@ const OptimizedImage: React.FC<{
   onLoad?: () => void
   onError?: () => void
   priority?: boolean
-}> = ({ src, alt, className = "", onLoad, onError, priority = false }) => {
+  quality?: "high" | "medium" | "low"
+  sizes?: string
+  onClick?: () => void
+}> = ({ src, alt, className = "", onLoad, onError, priority = false, quality = "high", sizes, onClick }) => {
   const [loadState, setLoadState] = useState<ImageLoadState>({
     loading: true,
     loaded: false,
     error: false,
     retryCount: 0,
+    progress: 0,
   })
   const [isInView, setIsInView] = useState(priority)
   const imgRef = useRef<HTMLImageElement>(null)
@@ -154,11 +324,11 @@ const OptimizedImage: React.FC<{
 
   // Lazy loading with Intersection Observer
   useEffect(() => {
-    if (priority) return // Skip lazy loading for priority images
+    if (priority) return
 
     const observerOptions = {
       root: null,
-      rootMargin: "50px",
+      rootMargin: "100px",
       threshold: 0.1,
     }
 
@@ -185,7 +355,13 @@ const OptimizedImage: React.FC<{
   }, [priority])
 
   const handleLoad = () => {
-    setLoadState((prev) => ({ ...prev, loading: false, loaded: true, error: false }))
+    setLoadState((prev) => ({
+      ...prev,
+      loading: false,
+      loaded: true,
+      error: false,
+      progress: 100,
+    }))
     onLoad?.()
   }
 
@@ -206,10 +382,9 @@ const OptimizedImage: React.FC<{
       ...prev,
       loading: true,
       error: false,
-      retryCount: prev.retryCount + 1,
+      progress: 0,
     }))
 
-    // Force reload by changing src
     if (imgRef.current) {
       const currentSrc = imgRef.current.src
       imgRef.current.src = ""
@@ -222,15 +397,14 @@ const OptimizedImage: React.FC<{
   }
 
   const shouldShowFallback = loadState.error && loadState.retryCount >= 3
-  const imageSrc = shouldShowFallback ? "/placeholder.jpg" : src
 
   return (
     <div ref={imgRef} className={`relative overflow-hidden ${className}`}>
       {/* Loading State */}
       {loadState.loading && isInView && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 animate-pulse">
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
             <span className="text-xs text-gray-500">Loading...</span>
           </div>
         </div>
@@ -239,10 +413,10 @@ const OptimizedImage: React.FC<{
       {/* Error State */}
       {loadState.error && !shouldShowFallback && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-100">
-          <AlertTriangle className="h-6 w-6 text-red-500 mb-2" />
-          <span className="text-xs text-gray-600 mb-2">Failed to load</span>
+          <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
+          <span className="text-xs text-gray-600 mb-2 text-center px-2">Failed to load image</span>
           {loadState.retryCount < 3 && (
-            <Button size="sm" variant="outline" onClick={retryLoad} className="text-xs px-2 py-1 bg-transparent">
+            <Button size="sm" variant="outline" onClick={retryLoad} className="text-xs px-2 py-1 h-6 bg-transparent">
               <RefreshCw className="h-3 w-3 mr-1" />
               Retry ({loadState.retryCount}/3)
             </Button>
@@ -252,30 +426,33 @@ const OptimizedImage: React.FC<{
 
       {/* Placeholder for lazy loading */}
       {!isInView && !priority && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <ImageIcon className="h-8 w-8 text-gray-300" />
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100">
+          <ImageIcon className="h-12 w-12 text-purple-300" />
         </div>
       )}
 
       {/* Actual Image */}
       {isInView && (
         <img
-          src={imageSrc || "/placeholder.svg"}
+          src={shouldShowFallback ? "/placeholder.svg" : src}
           alt={alt}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
+          className={`w-full h-full object-cover transition-all duration-500 cursor-pointer hover:scale-105 ${
             loadState.loaded ? "opacity-100" : "opacity-0"
           }`}
           onLoad={handleLoad}
           onError={handleError}
+          onClick={onClick}
           crossOrigin="anonymous"
+          loading={priority ? "eager" : "lazy"}
+          sizes={sizes || "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
         />
       )}
 
       {/* Quality Indicator */}
-      {loadState.loaded && !shouldShowFallback && src.includes("catbox.moe") && (
-        <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-1 py-0.5 rounded flex items-center gap-1">
+      {loadState.loaded && !shouldShowFallback && (
+        <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Wifi className="h-2 w-2" />
-          HD
+          {quality?.toUpperCase()}
         </div>
       )}
     </div>
@@ -283,49 +460,57 @@ const OptimizedImage: React.FC<{
 }
 
 export default function PhotoGallery() {
+  // Core state
   const [posts, setPosts] = useState<InstagramPost[]>(instagramPosts)
   const [selectedPost, setSelectedPost] = useState<InstagramPost | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<string, number>>({})
-  const [showAllComments, setShowAllComments] = useState<string | null>(null)
-  const [touchStart, setTouchStart] = useState<number | null>(null)
-  const [touchEnd, setTouchEnd] = useState<number | null>(null)
-  const [networkStatus, setNetworkStatus] = useState<"online" | "offline">("online")
-  const [loadingProgress, setLoadingProgress] = useState<Record<string, number>>({})
-  const carouselRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  // UI state
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
+  const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState(1)
+
+  // Settings
+  const itemsPerPage = 6
+
   const { toast } = useToast()
 
-  // Network status monitoring
-  useEffect(() => {
-    const handleOnline = () => {
-      setNetworkStatus("online")
-      toast({
-        title: "Connection restored",
-        description: "You're back online!",
-      })
+  // Categories for filtering
+  const categories = useMemo(() => {
+    const cats = ["all", ...new Set(posts.map((post) => post.category))]
+    return cats
+  }, [posts])
+
+  // Filtered and paginated posts
+  const filteredPosts = useMemo(() => {
+    let filtered = posts
+
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (post) =>
+          post.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          post.hashtags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          post.location?.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
     }
 
-    const handleOffline = () => {
-      setNetworkStatus("offline")
-      toast({
-        title: "Connection lost",
-        description: "Check your internet connection",
-        variant: "destructive",
-      })
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter((post) => post.category === selectedCategory)
     }
 
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
+    return filtered
+  }, [posts, searchQuery, selectedCategory])
 
-    return () => {
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
-    }
-  }, [toast])
+  const paginatedPosts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredPosts.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredPosts, currentPage, itemsPerPage])
 
-  // Track loading progress for posts
-  const updateLoadingProgress = useCallback((postId: string, progress: number) => {
-    setLoadingProgress((prev) => ({ ...prev, [postId]: progress }))
-  }, [])
+  const totalPages = Math.ceil(filteredPosts.length / itemsPerPage)
 
   // Format numbers (Instagram style)
   const formatCount = (count: number): string => {
@@ -335,46 +520,63 @@ export default function PhotoGallery() {
   }
 
   // Handle like toggle
-  const toggleLike = (postId: string) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === postId) {
-          const newIsLiked = !post.isLiked
-          return {
-            ...post,
-            isLiked: newIsLiked,
-            likes: newIsLiked ? post.likes + 1 : post.likes - 1,
-          }
+  const toggleLike = useCallback(
+    (postId: string) => {
+      setLikedPosts((prev) => {
+        const newSet = new Set(prev)
+        if (newSet.has(postId)) {
+          newSet.delete(postId)
+        } else {
+          newSet.add(postId)
         }
-        return post
-      }),
-    )
+        return newSet
+      })
 
-    // Heart animation effect
-    if (!posts.find((p) => p.id === postId)?.isLiked) {
-      createHeartAnimation()
-    }
-  }
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            const newIsLiked = !likedPosts.has(postId)
+            return {
+              ...post,
+              likes: newIsLiked ? post.likes + 1 : post.likes - 1,
+              isLiked: newIsLiked,
+            }
+          }
+          return post
+        }),
+      )
+
+      // Heart animation effect
+      if (!likedPosts.has(postId)) {
+        createHeartAnimation()
+      }
+    },
+    [likedPosts],
+  )
 
   // Handle save toggle
-  const toggleSave = (postId: string) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === postId) {
-          return { ...post, isSaved: !post.isSaved }
-        }
-        return post
-      }),
-    )
+  const toggleSave = useCallback(
+    (postId: string) => {
+      setSavedPosts((prev) => {
+        const newSet = new Set(prev)
+        const wasSaved = newSet.has(postId)
 
-    const post = posts.find((p) => p.id === postId)
-    if (post) {
-      toast({
-        title: post.isSaved ? "Removed from saved" : "Saved!",
-        description: post.isSaved ? "Post removed from collection" : "Post saved to collection 📌",
+        if (wasSaved) {
+          newSet.delete(postId)
+        } else {
+          newSet.add(postId)
+        }
+
+        toast({
+          title: wasSaved ? "Removed from saved" : "Saved!",
+          description: wasSaved ? "Photo removed from collection" : "Photo saved to collection 📌",
+        })
+
+        return newSet
       })
-    }
-  }
+    },
+    [toast],
+  )
 
   // Create heart animation
   const createHeartAnimation = () => {
@@ -393,61 +595,10 @@ export default function PhotoGallery() {
     }, 1000)
   }
 
-  // Handle carousel navigation
-  const navigateCarousel = (postId: string, direction: "prev" | "next") => {
-    const post = posts.find((p) => p.id === postId)
-    if (!post) return
-
-    const currentIndex = currentImageIndex[postId] || 0
-    let newIndex: number
-
-    if (direction === "next") {
-      newIndex = currentIndex < post.images.length - 1 ? currentIndex + 1 : 0
-    } else {
-      newIndex = currentIndex > 0 ? currentIndex - 1 : post.images.length - 1
-    }
-
-    setCurrentImageIndex((prev) => ({ ...prev, [postId]: newIndex }))
-
-    // Scroll to the new image
-    const carousel = carouselRefs.current[postId]
-    if (carousel) {
-      const imageWidth = carousel.offsetWidth
-      carousel.scrollTo({
-        left: newIndex * imageWidth,
-        behavior: "smooth",
-      })
-    }
-  }
-
-  // Handle touch events for swipe
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchEnd = (postId: string) => {
-    if (!touchStart || !touchEnd) return
-
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > 50
-    const isRightSwipe = distance < -50
-
-    if (isLeftSwipe) {
-      navigateCarousel(postId, "next")
-    } else if (isRightSwipe) {
-      navigateCarousel(postId, "prev")
-    }
-  }
-
-  // Handle double tap to like
+  // Handle double click to like
   const handleDoubleClick = (postId: string) => {
     const post = posts.find((p) => p.id === postId)
-    if (post && !post.isLiked) {
+    if (post && !likedPosts.has(postId)) {
       toggleLike(postId)
     }
   }
@@ -457,7 +608,7 @@ export default function PhotoGallery() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Check out ${post.username}'s post`,
+          title: `Check out ${post.username}'s photo`,
           text: post.caption,
           url: window.location.href,
         })
@@ -469,7 +620,7 @@ export default function PhotoGallery() {
         await navigator.clipboard.writeText(window.location.href)
         toast({
           title: "Link copied!",
-          description: "Post link copied to clipboard 📋",
+          description: "Photo link copied to clipboard 📋",
         })
       } catch (error) {
         toast({
@@ -482,477 +633,464 @@ export default function PhotoGallery() {
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-white">
-      {/* Network Status Indicator */}
-      {networkStatus === "offline" && (
-        <div className="sticky top-0 z-50 bg-red-500 text-white px-4 py-2 flex items-center gap-2">
-          <WifiOff className="w-4 h-4" />
-          <span className="text-sm">No internet connection</span>
+    <div className="w-full max-w-6xl mx-auto bg-white">
+      {/* Gallery Header with Controls */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 p-4">
+        <div className="flex flex-col gap-4">
+          {/* Title and Stats */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                Varsha's Gallery
+              </h2>
+              <p className="text-sm text-gray-600">
+                {filteredPosts.length} photos • {categories.length - 1} categories
+              </p>
+            </div>
+          </div>
+
+          {/* Search and Filter */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search photos, captions, or hashtags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-9"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                >
+                  <XIcon className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category === "all" ? "All Photos" : category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* Instagram Feed */}
-      <div className="divide-y divide-gray-200">
-        {posts.map((post) => {
-          const currentIndex = currentImageIndex[post.id] || 0
-          const hasMultipleImages = post.images.length > 1
-          const progress = loadingProgress[post.id] || 0
+      {/* Gallery Content */}
+      <div className="p-4">
+        {/* No Results */}
+        {filteredPosts.length === 0 && (
+          <div className="text-center py-12">
+            <ImageIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">No photos found</h3>
+            <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+          </div>
+        )}
 
-          return (
-            <article key={post.id} className="bg-white">
-              {/* Post Header */}
-              <header className="flex items-center justify-between p-3">
-                <div className="flex items-center space-x-3">
-                  <div className="relative">
+        {/* Instagram-style Posts Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {paginatedPosts.map((post) => {
+            const currentIndex = currentImageIndex[post.id] || 0
+
+            return (
+              <article
+                key={post.id}
+                className="bg-white rounded-lg shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 border border-gray-200"
+              >
+                {/* Post Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
                     <OptimizedImage
                       src={post.userAvatar}
                       alt={post.username}
                       className="w-8 h-8 rounded-full"
                       priority={true}
                     />
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5 -z-10">
-                      <div className="w-full h-full rounded-full bg-white"></div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-center space-x-1">
-                      <span className="font-semibold text-sm text-gray-900">{post.username}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-sm">{post.username}</span>
                       {post.isVerified && (
                         <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                           <path
                             fillRule="evenodd"
-                            d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                             clipRule="evenodd"
                           />
                         </svg>
                       )}
                     </div>
-                    {post.location && <span className="text-xs text-gray-500">{post.location}</span>}
+                    {post.location && <span className="text-xs text-gray-500">• {post.location}</span>}
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Image Container */}
+                <div className="relative aspect-square bg-gray-100">
+                  <OptimizedImage
+                    src={post.images[currentIndex]}
+                    alt={post.alt}
+                    className="w-full h-full"
+                    priority={false}
+                    quality={post.quality}
+                    onClick={() => setSelectedPost(post)}
+                    onDoubleClick={() => handleDoubleClick(post.id)}
+                  />
+
+                  {/* Category Badge */}
+                  <div className="absolute top-3 left-3 bg-purple-500 text-white text-xs px-2 py-1 rounded-full font-medium capitalize">
+                    {post.category}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="p-1 hover:bg-gray-100">
-                  <MoreHorizontal className="w-5 h-5 text-gray-600" />
-                </Button>
-              </header>
 
-              {/* Loading Progress Bar */}
-              {progress > 0 && progress < 100 && (
-                <div className="px-3 pb-2">
-                  <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div
-                      className="bg-blue-500 h-1 rounded-full transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-gray-500 mt-1">Loading images... {Math.round(progress)}%</span>
-                </div>
-              )}
-
-              {/* Post Images Carousel */}
-              <div className="relative">
-                <div
-                  ref={(el) => {
-                    carouselRefs.current[post.id] = el
-                  }}
-                  className="flex overflow-x-hidden scroll-smooth"
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={() => handleTouchEnd(post.id)}
-                >
-                  {post.images.map((image, index) => (
-                    <div key={index} className="w-full flex-shrink-0 aspect-square bg-gray-100">
-                      <OptimizedImage
-                        src={image}
-                        alt={`Post image ${index + 1}`}
-                        className="w-full h-full cursor-pointer select-none"
-                        priority={index === 0} // Prioritize first image
-                        onLoad={() => {
-                          const newProgress = ((index + 1) / post.images.length) * 100
-                          updateLoadingProgress(post.id, newProgress)
-                        }}
-                      />
-
-                      {/* Click overlay for interactions */}
-                      <div
-                        className="absolute inset-0 cursor-pointer"
-                        onDoubleClick={() => handleDoubleClick(post.id)}
-                        onClick={() => setSelectedPost(post)}
-                      />
+                {/* Post Actions */}
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => toggleLike(post.id)}
+                        className="flex items-center gap-1 transition-colors hover:text-red-500"
+                      >
+                        <Heart
+                          className={`w-6 h-6 transition-colors ${
+                            likedPosts.has(post.id) ? "text-red-500 fill-red-500" : "text-gray-600"
+                          }`}
+                        />
+                      </button>
+                      <button className="flex items-center gap-1 text-gray-600 hover:text-gray-800 transition-colors">
+                        <MessageCircle className="w-6 h-6" />
+                      </button>
+                      <button
+                        onClick={() => handleShare(post)}
+                        className="text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        <Share2 className="w-6 h-6" />
+                      </button>
                     </div>
-                  ))}
-                </div>
-
-                {/* Carousel Navigation Buttons */}
-                {hasMultipleImages && (
-                  <>
-                    {currentIndex > 0 && (
-                      <button
-                        onClick={() => navigateCarousel(post.id, "prev")}
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/20 hover:bg-black/40 rounded-full flex items-center justify-center transition-all duration-200"
-                      >
-                        <ChevronLeft className="w-5 h-5 text-white" />
-                      </button>
-                    )}
-
-                    {currentIndex < post.images.length - 1 && (
-                      <button
-                        onClick={() => navigateCarousel(post.id, "next")}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-black/20 hover:bg-black/40 rounded-full flex items-center justify-center transition-all duration-200"
-                      >
-                        <ChevronRight className="w-5 h-5 text-white" />
-                      </button>
-                    )}
-                  </>
-                )}
-
-                {/* Image Indicators */}
-                {hasMultipleImages && (
-                  <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-1">
-                    {post.images.map((_, index) => (
-                      <div
-                        key={index}
-                        className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                          index === currentIndex ? "bg-blue-500" : "bg-white/60"
+                    <button onClick={() => toggleSave(post.id)} className="transition-colors hover:text-yellow-500">
+                      <Bookmark
+                        className={`w-6 h-6 ${
+                          savedPosts.has(post.id) ? "text-yellow-500 fill-yellow-500" : "text-gray-600"
                         }`}
                       />
-                    ))}
+                    </button>
                   </div>
-                )}
 
-                {/* Multiple Images Indicator */}
-                {hasMultipleImages && (
-                  <div className="absolute top-3 right-3 bg-black/50 rounded-full px-2 py-1">
-                    <span className="text-white text-xs font-medium">
-                      {currentIndex + 1}/{post.images.length}
+                  {/* Likes Count */}
+                  <div className="mb-2">
+                    <span className="font-semibold text-sm">
+                      {formatCount((post.likes || 0) + (likedPosts.has(post.id) ? 1 : 0))} likes
                     </span>
                   </div>
-                )}
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between p-3">
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => toggleLike(post.id)}
-                    className="transition-transform hover:scale-110 active:scale-95"
-                  >
-                    <Heart
-                      className={`w-6 h-6 transition-colors duration-200 ${
-                        post.isLiked ? "text-red-500 fill-red-500" : "text-gray-900 hover:text-gray-600"
-                      }`}
-                    />
-                  </button>
-                  <button
-                    onClick={() => setShowAllComments(showAllComments === post.id ? null : post.id)}
-                    className="transition-transform hover:scale-110 active:scale-95"
-                  >
-                    <MessageCircle className="w-6 h-6 text-gray-900 hover:text-gray-600 transition-colors duration-200" />
-                  </button>
-                  <button
-                    onClick={() => handleShare(post)}
-                    className="transition-transform hover:scale-110 active:scale-95"
-                  >
-                    <Send className="w-6 h-6 text-gray-900 hover:text-gray-600 transition-colors duration-200" />
-                  </button>
-                </div>
-                <button
-                  onClick={() => toggleSave(post.id)}
-                  className="transition-transform hover:scale-110 active:scale-95"
-                >
-                  <Bookmark
-                    className={`w-6 h-6 transition-colors duration-200 ${
-                      post.isSaved ? "text-gray-900 fill-gray-900" : "text-gray-900 hover:text-gray-600"
-                    }`}
-                  />
-                </button>
-              </div>
+                  {/* Caption */}
+                  <div className="mb-2">
+                    <span className="font-semibold text-sm mr-2">{post.username}</span>
+                    <span className="text-sm">{post.caption}</span>
+                  </div>
 
-              {/* Likes Count */}
-              <div className="px-3 pb-1">
-                <button className="font-semibold text-sm text-gray-900 hover:text-gray-600">
-                  {formatCount(post.likes)} likes
-                </button>
-              </div>
-
-              {/* Caption */}
-              <div className="px-3 pb-2">
-                <div className="text-sm">
-                  <span className="font-semibold text-gray-900 mr-2">{post.username}</span>
-                  <span className="text-gray-900">{post.caption}</span>
-                </div>
-                {post.hashtags.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {post.hashtags.map((hashtag, index) => (
-                      <button key={index} className="text-sm text-blue-600 hover:underline">
+                  {/* Hashtags */}
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {post.hashtags.slice(0, 3).map((hashtag, index) => (
+                      <span key={index} className="text-xs text-blue-600 hover:underline cursor-pointer">
                         {hashtag}
+                      </span>
+                    ))}
+                    {post.hashtags.length > 3 && (
+                      <span className="text-xs text-gray-500">+{post.hashtags.length - 3} more</span>
+                    )}
+                  </div>
+
+                  {/* Comments Preview */}
+                  {post.comments.length > 0 && (
+                    <div className="space-y-1 mb-2">
+                      <button className="text-xs text-gray-500 hover:text-gray-700">
+                        View all {post.comments.length} comments
                       </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Comments */}
-              {post.comments.length > 0 && (
-                <div className="px-3 pb-2">
-                  {post.comments.length > 2 && showAllComments !== post.id && (
-                    <button
-                      onClick={() => setShowAllComments(post.id)}
-                      className="text-sm text-gray-500 hover:text-gray-700 mb-2 block"
-                    >
-                      View all {post.comments.length} comments
-                    </button>
-                  )}
-
-                  <div className="space-y-1">
-                    {(showAllComments === post.id ? post.comments : post.comments.slice(0, 2)).map((comment) => (
-                      <div key={comment.id} className="flex items-start justify-between group">
-                        <div className="text-sm flex-1">
-                          <span className="font-semibold text-gray-900 mr-2">{comment.username}</span>
-                          <span className="text-gray-900">{comment.text}</span>
-                          <div className="flex items-center space-x-3 mt-1 text-xs text-gray-500">
-                            <span>{comment.timeAgo}</span>
-                            {comment.likes > 0 && <span>{comment.likes} likes</span>}
-                            <button className="hover:text-gray-700">Reply</button>
-                          </div>
+                      {post.comments.slice(0, 2).map((comment) => (
+                        <div key={comment.id} className="text-sm">
+                          <span className="font-semibold mr-2">{comment.username}</span>
+                          <span>{comment.text}</span>
                         </div>
-                        <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2">
-                          <Heart
-                            className={`w-3 h-3 ${comment.isLiked ? "text-red-500 fill-red-500" : "text-gray-400"}`}
-                          />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {showAllComments === post.id && (
-                    <button
-                      onClick={() => setShowAllComments(null)}
-                      className="text-sm text-gray-500 hover:text-gray-700 mt-2"
-                    >
-                      Hide comments
-                    </button>
+                      ))}
+                    </div>
                   )}
+
+                  {/* Time */}
+                  <div className="text-xs text-gray-500 uppercase">{post.timeAgo}</div>
                 </div>
+              </article>
+            )
+          })}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              })}
+              {totalPages > 5 && (
+                <>
+                  <span className="text-gray-500">...</span>
+                  <Button
+                    variant={currentPage === totalPages ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {totalPages}
+                  </Button>
+                </>
               )}
+            </div>
 
-              {/* Timestamp */}
-              <div className="px-3 pb-3">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">{post.timeAgo}</span>
-              </div>
-
-              {/* Add Comment Section */}
-              <div className="border-t border-gray-200 px-3 py-3">
-                <div className="flex items-center space-x-3">
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </button>
-                  <input
-                    type="text"
-                    placeholder="Add a comment..."
-                    className="flex-1 text-sm placeholder-gray-500 border-none outline-none bg-transparent"
-                  />
-                  <button className="text-sm font-semibold text-blue-500 hover:text-blue-700 disabled:text-gray-400">
-                    Post
-                  </button>
-                </div>
-              </div>
-            </article>
-          )
-        })}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Full Screen Modal */}
       <Dialog open={!!selectedPost} onOpenChange={(open) => !open && setSelectedPost(null)}>
-        <DialogContent className="max-w-5xl p-0 overflow-hidden bg-black">
+        <DialogContent
+          className={`max-w-7xl p-0 overflow-hidden bg-black ${isFullscreen ? "w-screen h-screen max-w-none" : ""}`}
+        >
           {selectedPost && (
-            <div className="flex h-[90vh]">
+            <div className={`flex ${isFullscreen ? "h-screen" : "h-[90vh]"}`}>
               {/* Image Section */}
               <div className="flex-1 relative bg-black flex items-center justify-center">
                 <OptimizedImage
                   src={selectedPost.images[currentImageIndex[selectedPost.id] || 0]}
-                  alt="Full size post"
-                  className="max-w-full max-h-full object-contain"
+                  alt={selectedPost.alt}
+                  className="max-w-full max-h-full object-contain transition-transform duration-200"
                   priority={true}
+                  style={{
+                    transform: `scale(${zoomLevel})`,
+                  }}
                 />
 
-                {/* Modal Navigation */}
-                {selectedPost.images.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => navigateCarousel(selectedPost.id, "prev")}
-                      className="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center"
+                {/* Top Controls */}
+                <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {selectedPost.images.length > 1 && (
+                      <div className="bg-black/60 rounded-full px-3 py-1">
+                        <span className="text-white text-sm font-medium">
+                          {(currentImageIndex[selectedPost.id] || 0) + 1}/{selectedPost.images.length}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Zoom Controls */}
+                    <div className="flex items-center gap-1 bg-black/60 rounded-full p-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setZoomLevel((prev) => Math.max(prev - 0.25, 0.5))}
+                        disabled={zoomLevel <= 0.5}
+                        className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                      >
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+                      <span className="text-white text-xs px-2 min-w-[3rem] text-center">
+                        {Math.round(zoomLevel * 100)}%
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setZoomLevel((prev) => Math.min(prev + 0.25, 5))}
+                        disabled={zoomLevel >= 5}
+                        className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                      >
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Fullscreen Toggle */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsFullscreen(!isFullscreen)}
+                      className="h-8 w-8 p-0 bg-black/60 text-white hover:bg-black/80"
                     >
-                      <ChevronLeft className="w-6 h-6 text-white" />
-                    </button>
-                    <button
-                      onClick={() => navigateCarousel(selectedPost.id, "next")}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center"
+                      {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                    </Button>
+
+                    {/* Close Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedPost(null)}
+                      className="h-8 w-8 p-0 bg-black/60 text-white hover:bg-black/80"
                     >
-                      <ChevronRight className="w-6 h-6 text-white" />
-                    </button>
-                  </>
-                )}
+                      <XIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
 
-              {/* Info Section */}
-              <div className="w-80 bg-white flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b">
-                  <div className="flex items-center space-x-3">
-                    <OptimizedImage
-                      src={selectedPost.userAvatar}
-                      alt={selectedPost.username}
-                      className="w-8 h-8 rounded-full"
-                      priority={true}
-                    />
-                    <div>
-                      <div className="flex items-center space-x-1">
-                        <span className="font-semibold text-sm">{selectedPost.username}</span>
-                        {selectedPost.isVerified && (
-                          <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
+              {/* Info Panel */}
+              {!isFullscreen && (
+                <div className="w-80 bg-white flex flex-col">
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-4 border-b">
+                    <div className="flex items-center space-x-3">
+                      <OptimizedImage
+                        src={selectedPost.userAvatar}
+                        alt={selectedPost.username}
+                        className="w-8 h-8 rounded-full"
+                        priority={true}
+                      />
+                      <div>
+                        <div className="flex items-center space-x-1">
+                          <span className="font-semibold text-sm">{selectedPost.username}</span>
+                          {selectedPost.isVerified && (
+                            <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path
+                                fillRule="evenodd"
+                                d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                        {selectedPost.location && (
+                          <span className="text-xs text-gray-500">{selectedPost.location}</span>
                         )}
                       </div>
-                      {selectedPost.location && <span className="text-xs text-gray-500">{selectedPost.location}</span>}
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="w-5 h-5" />
-                  </Button>
-                </div>
 
-                {/* Comments */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  <div className="text-sm">
-                    <span className="font-semibold mr-2">{selectedPost.username}</span>
-                    <span>{selectedPost.caption}</span>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {selectedPost.hashtags.map((hashtag, index) => (
-                        <span key={index} className="text-blue-600">
-                          {hashtag}
-                        </span>
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {/* Caption */}
+                    <div className="text-sm">
+                      <span className="font-semibold mr-2">{selectedPost.username}</span>
+                      <span>{selectedPost.caption}</span>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {selectedPost.hashtags.map((hashtag, index) => (
+                          <span key={index} className="text-blue-600 hover:underline cursor-pointer">
+                            {hashtag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Comments */}
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold text-sm mb-3">Comments</h4>
+                      {selectedPost.comments.map((comment) => (
+                        <div key={comment.id} className="text-sm mb-3">
+                          <span className="font-semibold mr-2">{comment.username}</span>
+                          <span>{comment.text}</span>
+                          <div className="flex items-center space-x-3 mt-1 text-xs text-gray-500">
+                            <span>{comment.timeAgo}</span>
+                            <button className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                              <Heart className={`w-3 h-3 ${comment.isLiked ? "fill-red-500 text-red-500" : ""}`} />
+                              <span>{formatCount(comment.likes)}</span>
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
 
-                  {selectedPost.comments.map((comment) => (
-                    <div key={comment.id} className="text-sm">
-                      <span className="font-semibold mr-2">{comment.username}</span>
-                      <span>{comment.text}</span>
-                      <div className="flex items-center space-x-3 mt-1 text-xs text-gray-500">
-                        <span>{comment.timeAgo}</span>
-                        {comment.likes > 0 && <span>{comment.likes} likes</span>}
-                        <button>Reply</button>
+                  {/* Footer Actions */}
+                  <div className="border-t p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => toggleLike(selectedPost.id)}
+                          className="flex items-center gap-1 transition-colors hover:text-red-500"
+                        >
+                          <Heart
+                            className={`w-6 h-6 transition-colors ${
+                              likedPosts.has(selectedPost.id) ? "text-red-500 fill-red-500" : "text-gray-600"
+                            }`}
+                          />
+                        </button>
+                        <button className="text-gray-600 hover:text-gray-800 transition-colors">
+                          <MessageCircle className="w-6 h-6" />
+                        </button>
+                        <button
+                          onClick={() => handleShare(selectedPost)}
+                          className="text-gray-600 hover:text-gray-800 transition-colors"
+                        >
+                          <Share2 className="w-6 h-6" />
+                        </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Actions */}
-                <div className="border-t p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <button onClick={() => toggleLike(selectedPost.id)}>
-                        <Heart
-                          className={`w-6 h-6 ${selectedPost.isLiked ? "text-red-500 fill-red-500" : "text-gray-900"}`}
+                      <button
+                        onClick={() => toggleSave(selectedPost.id)}
+                        className="transition-colors hover:text-yellow-500"
+                      >
+                        <Bookmark
+                          className={`w-6 h-6 ${
+                            savedPosts.has(selectedPost.id) ? "text-yellow-500 fill-yellow-500" : "text-gray-600"
+                          }`}
                         />
                       </button>
-                      <button>
-                        <MessageCircle className="w-6 h-6 text-gray-900" />
-                      </button>
-                      <button onClick={() => handleShare(selectedPost)}>
-                        <Send className="w-6 h-6 text-gray-900" />
-                      </button>
                     </div>
-                    <button onClick={() => toggleSave(selectedPost.id)}>
-                      <Bookmark
-                        className={`w-6 h-6 ${selectedPost.isSaved ? "text-gray-900 fill-gray-900" : "text-gray-900"}`}
-                      />
-                    </button>
-                  </div>
 
-                  <div className="font-semibold text-sm">{formatCount(selectedPost.likes)} likes</div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">{selectedPost.timeAgo}</div>
+                    <div className="mb-2">
+                      <span className="font-semibold text-sm">
+                        {formatCount((selectedPost.likes || 0) + (likedPosts.has(selectedPost.id) ? 1 : 0))} likes
+                      </span>
+                    </div>
 
-                  <div className="flex items-center space-x-3 pt-2 border-t">
-                    <input
-                      type="text"
-                      placeholder="Add a comment..."
-                      className="flex-1 text-sm placeholder-gray-500 border-none outline-none"
-                    />
-                    <button className="text-sm font-semibold text-blue-500">Post</button>
+                    <div className="text-xs text-gray-500 uppercase">{selectedPost.timeAgo}</div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Custom Styles */}
-      <style jsx>{`
-        /* Smooth scrolling for carousel */
-        .scroll-smooth {
-          scroll-behavior: smooth;
-        }
-
-        /* Hide scrollbar */
-        .overflow-x-hidden::-webkit-scrollbar {
-          display: none;
-        }
-
-        /* Instagram-style animations */
-        @keyframes heartPulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.2); }
-          100% { transform: scale(1); }
-        }
-
-        .animate-heart {
-          animation: heartPulse 0.3s ease-in-out;
-        }
-
-        /* Smooth transitions */
-        * {
-          transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-          transition-duration: 150ms;
-        }
-
-        /* Touch feedback */
-        @media (hover: none) and (pointer: coarse) {
-          button:active {
-            transform: scale(0.95);
-          }
-        }
-
-        /* Focus states */
-        button:focus-visible {
-          outline: 2px solid #3b82f6;
-          outline-offset: 2px;
-        }
-
-        /* Loading animation */
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
     </div>
   )
 }

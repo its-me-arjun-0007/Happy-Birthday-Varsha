@@ -13,34 +13,38 @@ import { blobAssets } from "@/lib/blob-assets"
 const PLAYLIST = [
   {
     id: 1,
-    title: "Happy Birthday Anna Cutie",
-    artist: "Tung Tulip",
+    title: "Happy Birthday My Wife",
+    artist: "Birthday Special",
     duration: 210,
-    audioUrl: blobAssets.music.song1.audio,
+    audioUrl:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Happy_Birthday_My_Wife%28256k%29-hlNHNBhCDZIFtn7Kbsp2vpe10IvgZ5.mp3",
     cover: blobAssets.music.song1.cover,
   },
   {
     id: 2,
     title: "Senjitaley",
-    artist: "Remo",
+    artist: "Remo - Sivakarthikeyan, Anirudh",
     duration: 245,
-    audioUrl: blobAssets.music.song2.audio,
+    audioUrl:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Remo_-_Senjitaley_Video___Sivakarthikeyan___Anirudh___Latest_Hit_Song%28256k%29-GX2CtNXn46ZyG1RZsKFePNfABnBBcq.mp3",
     cover: blobAssets.music.song2.cover,
   },
   {
     id: 3,
-    title: "Nee kavithaigala",
-    artist: "Maragatha Naanayam",
+    title: "Nee Kavithaigala",
+    artist: "Maragatha Naanayam - Aadhi, Nikki Galrani, Dhibu Ninan Thomas",
     duration: 183,
-    audioUrl: blobAssets.music.song3.audio,
+    audioUrl:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Maragatha_Naanayam___Nee_Kavithaigala_Song_with_Lyrics___Aadhi%2C_Nikki_Galrani___Dhibu_Ninan_Thomas%28256k%29-yMkoJAMYeskukbpoZZGFq42drEuorI.mp3",
     cover: blobAssets.music.song3.cover,
   },
   {
     id: 4,
     title: "Sahibaa",
-    artist: "Anarkali",
+    artist: "Anarkali - Prithviraj, Priyal Gor, Hariharan",
     duration: 237,
-    audioUrl: blobAssets.music.song4.audio,
+    audioUrl:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Sahibaa___Lyrical_Video_Song___Anarkali___Prithviraj___Priyal_Gor___Hariharan%28256k%29-A21KbjJWlx9QpWOUJqPsdUFAo1P7U9.mp3",
     cover: blobAssets.music.song4.cover,
   },
 ]

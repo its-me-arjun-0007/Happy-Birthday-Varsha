@@ -2,18 +2,24 @@
 // This file manages all blob URLs for images, videos, and other assets
 
 export const blobAssets = {
-  // Photo gallery images
+  // Photo gallery images - Updated with new beautiful photos
   photos: {
-    photo1: "https://files.catbox.moe/nnqroj.jpg",
-    photo2: "https://files.catbox.moe/wa1vpn.jpg",
-    photo3: "https://files.catbox.moe/450wcf.jpg",
-    photo4: "https://files.catbox.moe/fy9eg2.jpg",
-    photo5: "https://files.catbox.moe/ubbyew.jpg",
-    photo6: "https://files.catbox.moe/gxs8xu.jpg",
+    photo1:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_20250428_100216_373.jpg-ZfGmYZUwzvETySSVPkpSOTPusk7u3K.jpeg", // Coral floral top, thoughtful pose
+    photo2:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_vrshha.jpg__-20250217-0001.jpg-oT0Wi1abRYXLLCdRcDoxCBVqDnwx9M.jpeg", // Mint green t-shirt, natural selfie
+    photo3:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_20250504_114953_865.jpg-3IuZOf0waI9R7qPDX0dnBsAfeGXVIK.jpeg", // White patterned shirt, cafe setting
+    photo4:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_20250620_195952_994.jpg-QsB8ZsY8AU47x88IsZOpJLLvh9pkwq.jpeg", // Purple t-shirt, playful pose
+    photo5:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_20250428_100213_683.jpg-lIxJdzzegzaiZQCTwhYQZX912knTGQ.jpeg", // Blue striped top, outdoor selfie
+    photo6:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_vrshha.jpg__-20250224-0001.jpg-2YuZu8FXhIORwx035JIvfcbMRyadVG.jpeg", // White hoodie, casual indoor selfie
   },
 
   // Video thumbnails (Varsha's photos)
-   videoThumbnails: {
+  videoThumbnails: {
     // thumb1: "/thumbnails/thumb-1.jpg", // Blue striped top selfie
     // thumb2: "/thumbnails/thumb-2.jpg", // Purple top with playful gesture
     // thumb3: "/thumbnails/thumb-3.jpg", // White patterned shirt at cafe
@@ -24,12 +30,18 @@ export const blobAssets = {
 
   // Video files
   videos: {
-    video1: "https://files.catbox.moe/nl70vd.mp4",
-    video2: "https://files.catbox.moe/zggvr5.mp4",
-    video3: "https://files.catbox.moe/k4zk03.mp4",
-    video4: "https://files.catbox.moe/eapza2.mp4",
-    video5: "https://files.catbox.moe/n216d9.mp4",
-    video6: "https://files.catbox.moe/072kf9.mp4",
+    video1:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_vrshha.__-20250516-0001-ZTtuiD87h1Kv9JNaAGqwhkL3mhknut.mp4", // Updated with new video
+    video2:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/smiley_y_y._-20240928-0001-y0gKucvKJppsmN6ZRdJsJkVSnYoB4I.mp4", // Updated with new smiley video
+    video3:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_vrshha.__-20250515-0001-EWBYJgPQsH0sFW3HocolOdqZaLEcvk.mp4", // Updated with new Vrshha video
+    video4:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/lv_7225387540260424966_20230704100014-cSaNfCALrxE5fiI6ATnvjNeG2vPavD.mp4", // Updated with new video
+    video5:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/smiley_y_y._-20240713-0002-gkPua0xjNknRQQFtMzPSMN3hpKzkO7.mp4", // Updated with the new smiley video
+    video6:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/smiley_y_y._-20240922-0001-0jSK0R9A53USB1XiIURIqzQpgAcqnZ.mp4", // NEW: Updated with the latest smiley video (September 2024)
   },
 
   // Music files
@@ -59,7 +71,7 @@ export const blobAssets = {
   },
 
   // Hero video for front page
-  heroVideo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1751030597793-cqGDMbETKlv9KYgNAqeuUtWcQZQTbQ.mp4",
+  heroVideo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1751459234086-HIDnbNCDb1xu7THb4xMRBOJZUmkL5V.mp4",
 } as const
 
 // Helper function to get blob URL with fallback
