@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, useEffect, useCallback } from "react"
 import {
   Play,
@@ -15,6 +14,9 @@ import {
   ChevronUp,
   ChevronDown,
   Loader2,
+  AlertTriangle,
+  Wifi,
+  WifiOff,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { blobAssets } from "@/lib/blob-assets"
@@ -34,6 +36,15 @@ interface Video {
   shares: number
   duration: number
   isVerified?: boolean
+}
+
+interface VideoLoadState {
+  loading: boolean
+  error: boolean
+  buffering: boolean
+  canPlay: boolean
+  progress: number
+  networkError: boolean
 }
 
 // Enhanced video data with Instagram-like metadata
@@ -134,26 +145,56 @@ export default function VideoGallery() {
   const [isMuted, setIsMuted] = useState(true)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
   const [likedVideos, setLikedVideos] = useState<Set<string>>(new Set())
   const [savedVideos, setSavedVideos] = useState<Set<string>>(new Set())
   const [videoProgress, setVideoProgress] = useState<Record<string, number>>({})
   const [showControls, setShowControls] = useState(true)
-  const [isBuffering, setIsBuffering] = useState(false)
   const [touchStartY, setTouchStartY] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [videoLoadStates, setVideoLoadStates] = useState<Record<string, VideoLoadState>>({})
+  const [retryAttempts, setRetryAttempts] = useState<Record<string, number>>({})
+  const [networkStatus, setNetworkStatus] = useState<"online" | "offline">("online")
 
   // Refs
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([])
   const controlsTimeoutRef = useRef<NodeJS.Timeout>()
+  const intersectionObserverRef = useRef<IntersectionObserver | null>(null)
   const { toast } = useToast()
 
   const currentVideo = videoData[currentVideoIndex]
 
-  // Initialize video refs
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => setNetworkStatus("online")
+    const handleOffline = () => setNetworkStatus("offline")
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
+
+  // Initialize video refs and load states
   useEffect(() => {
     videoRefs.current = videoRefs.current.slice(0, videoData.length)
+
+    // Initialize load states for all videos
+    const initialStates: Record<string, VideoLoadState> = {}
+    videoData.forEach((video) => {
+      initialStates[video.id] = {
+        loading: false,
+        error: false,
+        buffering: false,
+        canPlay: false,
+        progress: 0,
+        networkError: false,
+      }
+    })
+    setVideoLoadStates(initialStates)
   }, [])
 
   // Auto-hide controls
@@ -167,42 +208,135 @@ export default function VideoGallery() {
     }, 3000)
   }, [])
 
-  // Handle video intersection and autoplay
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const videoElement = entry.target as HTMLVideoElement
-          const videoIndex = videoRefs.current.indexOf(videoElement)
+  // Update video load state
+  const updateVideoLoadState = useCallback((videoId: string, updates: Partial<VideoLoadState>) => {
+    setVideoLoadStates((prev) => ({
+      ...prev,
+      [videoId]: { ...prev[videoId], ...updates },
+    }))
+  }, [])
 
-          if (entry.isIntersecting && entry.intersectionRatio > 0.8) {
-            setCurrentVideoIndex(videoIndex)
-            if (videoElement && videoElement.paused) {
-              videoElement.play().catch(() => {})
-            }
-          } else {
-            if (videoElement && !videoElement.paused) {
-              videoElement.pause()
-            }
-          }
+  // Retry video loading
+  const retryVideoLoad = useCallback(
+    (videoId: string, videoElement: HTMLVideoElement) => {
+      const attempts = retryAttempts[videoId] || 0
+      if (attempts >= 3) {
+        toast({
+          title: "Video Load Failed",
+          description: "Unable to load video after multiple attempts",
+          variant: "destructive",
         })
-      },
-      {
-        threshold: [0.8],
-        rootMargin: "-5% 0px -5% 0px",
-      },
-    )
+        return
+      }
 
+      setRetryAttempts((prev) => ({ ...prev, [videoId]: attempts + 1 }))
+      updateVideoLoadState(videoId, { loading: true, error: false, networkError: false })
+
+      // Force reload the video
+      videoElement.load()
+
+      toast({
+        title: "Retrying...",
+        description: `Attempt ${attempts + 1} of 3`,
+      })
+    },
+    [retryAttempts, updateVideoLoadState, toast],
+  )
+
+  // Lazy loading with Intersection Observer
+  useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: "50px",
+      threshold: 0.1,
+    }
+
+    intersectionObserverRef.current = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const videoElement = entry.target as HTMLVideoElement
+        const videoIndex = videoRefs.current.indexOf(videoElement)
+        const video = videoData[videoIndex]
+
+        if (entry.isIntersecting && video) {
+          // Start loading video when it comes into view
+          if (!videoLoadStates[video.id]?.canPlay && !videoLoadStates[video.id]?.loading) {
+            updateVideoLoadState(video.id, { loading: true })
+            videoElement.load()
+          }
+
+          // Auto-play logic for current video
+          if (videoIndex === currentVideoIndex && videoElement.paused) {
+            videoElement.play().catch(() => {
+              updateVideoLoadState(video.id, { error: true, loading: false })
+            })
+          }
+        } else {
+          // Pause video when out of view
+          if (!videoElement.paused) {
+            videoElement.pause()
+          }
+        }
+      })
+    }, observerOptions)
+
+    // Observe all video elements
     videoRefs.current.forEach((video) => {
-      if (video) observer.observe(video)
+      if (video && intersectionObserverRef.current) {
+        intersectionObserverRef.current.observe(video)
+      }
     })
 
-    return () => observer.disconnect()
-  }, [])
+    return () => {
+      if (intersectionObserverRef.current) {
+        intersectionObserverRef.current.disconnect()
+      }
+    }
+  }, [currentVideoIndex, videoLoadStates, updateVideoLoadState])
 
   // Handle video events
   const setupVideoEvents = useCallback(
     (video: HTMLVideoElement, index: number) => {
+      const videoId = videoData[index].id
+
+      const handleLoadStart = () => {
+        updateVideoLoadState(videoId, { loading: true, error: false })
+      }
+
+      const handleLoadedMetadata = () => {
+        if (index === currentVideoIndex) {
+          setDuration(video.duration)
+        }
+        updateVideoLoadState(videoId, { loading: false, canPlay: true })
+      }
+
+      const handleCanPlay = () => {
+        updateVideoLoadState(videoId, {
+          loading: false,
+          canPlay: true,
+          buffering: false,
+          error: false,
+        })
+      }
+
+      const handleWaiting = () => {
+        if (index === currentVideoIndex) {
+          updateVideoLoadState(videoId, { buffering: true })
+        }
+      }
+
+      const handlePlaying = () => {
+        if (index === currentVideoIndex) {
+          setIsPlaying(true)
+          updateVideoLoadState(videoId, { buffering: false })
+        }
+      }
+
+      const handlePause = () => {
+        if (index === currentVideoIndex) {
+          setIsPlaying(false)
+        }
+      }
+
       const handleTimeUpdate = () => {
         if (index === currentVideoIndex) {
           const current = video.currentTime
@@ -210,14 +344,8 @@ export default function VideoGallery() {
           setCurrentTime(current)
           setVideoProgress((prev) => ({
             ...prev,
-            [videoData[index].id]: (current / total) * 100,
+            [videoId]: (current / total) * 100,
           }))
-        }
-      }
-
-      const handleLoadedMetadata = () => {
-        if (index === currentVideoIndex) {
-          setDuration(video.duration)
         }
       }
 
@@ -230,60 +358,58 @@ export default function VideoGallery() {
         }
       }
 
-      const handlePlay = () => {
-        if (index === currentVideoIndex) {
-          setIsPlaying(true)
-          setIsLoading(false)
-          setIsBuffering(false)
-        }
-      }
+      const handleError = () => {
+        const isNetworkError = networkStatus === "offline"
+        updateVideoLoadState(videoId, {
+          error: true,
+          loading: false,
+          buffering: false,
+          networkError: isNetworkError,
+        })
 
-      const handlePause = () => {
         if (index === currentVideoIndex) {
           setIsPlaying(false)
         }
       }
 
-      const handleWaiting = () => {
+      const handleStalled = () => {
         if (index === currentVideoIndex) {
-          setIsBuffering(true)
+          updateVideoLoadState(videoId, { buffering: true })
         }
       }
 
-      const handleCanPlay = () => {
-        if (index === currentVideoIndex) {
-          setIsLoading(false)
-          setIsBuffering(false)
-        }
+      const handleSuspend = () => {
+        updateVideoLoadState(videoId, { buffering: false })
       }
 
-      const handleLoadStart = () => {
-        if (index === currentVideoIndex) {
-          setIsLoading(true)
-        }
-      }
-
-      video.addEventListener("timeupdate", handleTimeUpdate)
-      video.addEventListener("loadedmetadata", handleLoadedMetadata)
-      video.addEventListener("ended", handleEnded)
-      video.addEventListener("play", handlePlay)
-      video.addEventListener("pause", handlePause)
-      video.addEventListener("waiting", handleWaiting)
-      video.addEventListener("canplay", handleCanPlay)
+      // Add all event listeners
       video.addEventListener("loadstart", handleLoadStart)
+      video.addEventListener("loadedmetadata", handleLoadedMetadata)
+      video.addEventListener("canplay", handleCanPlay)
+      video.addEventListener("waiting", handleWaiting)
+      video.addEventListener("playing", handlePlaying)
+      video.addEventListener("pause", handlePause)
+      video.addEventListener("timeupdate", handleTimeUpdate)
+      video.addEventListener("ended", handleEnded)
+      video.addEventListener("error", handleError)
+      video.addEventListener("stalled", handleStalled)
+      video.addEventListener("suspend", handleSuspend)
 
       return () => {
-        video.removeEventListener("timeupdate", handleTimeUpdate)
-        video.removeEventListener("loadedmetadata", handleLoadedMetadata)
-        video.removeEventListener("ended", handleEnded)
-        video.removeEventListener("play", handlePlay)
-        video.removeEventListener("pause", handlePause)
-        video.removeEventListener("waiting", handleWaiting)
-        video.removeEventListener("canplay", handleCanPlay)
         video.removeEventListener("loadstart", handleLoadStart)
+        video.removeEventListener("loadedmetadata", handleLoadedMetadata)
+        video.removeEventListener("canplay", handleCanPlay)
+        video.removeEventListener("waiting", handleWaiting)
+        video.removeEventListener("playing", handlePlaying)
+        video.removeEventListener("pause", handlePause)
+        video.removeEventListener("timeupdate", handleTimeUpdate)
+        video.removeEventListener("ended", handleEnded)
+        video.removeEventListener("error", handleError)
+        video.removeEventListener("stalled", handleStalled)
+        video.removeEventListener("suspend", handleSuspend)
       }
     },
-    [currentVideoIndex],
+    [currentVideoIndex, updateVideoLoadState, networkStatus],
   )
 
   // Setup video events
@@ -305,6 +431,7 @@ export default function VideoGallery() {
   const scrollToVideo = (index: number) => {
     const container = containerRef.current
     if (container && index >= 0 && index < videoData.length) {
+      setCurrentVideoIndex(index)
       const targetY = index * window.innerHeight
       container.scrollTo({
         top: targetY,
@@ -320,13 +447,14 @@ export default function VideoGallery() {
       if (isPlaying) {
         video.pause()
       } else {
-        video.play().catch(() => {
-          toast({
-            title: "Playback Error",
-            description: "Unable to play video. Please try again.",
-            variant: "destructive",
+        const loadState = videoLoadStates[currentVideo.id]
+        if (loadState?.error) {
+          retryVideoLoad(currentVideo.id, video)
+        } else {
+          video.play().catch(() => {
+            updateVideoLoadState(currentVideo.id, { error: true })
           })
-        })
+        }
       }
     }
     resetControlsTimeout()
@@ -527,218 +655,273 @@ export default function VideoGallery() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Network Status Indicator */}
+      {networkStatus === "offline" && (
+        <div className="absolute top-4 left-4 right-4 z-40 bg-red-500 text-white px-3 py-2 rounded-lg flex items-center gap-2">
+          <WifiOff className="w-4 h-4" />
+          <span className="text-sm">No internet connection</span>
+        </div>
+      )}
+
       {/* Video Container */}
       <div
         ref={containerRef}
         className="h-full overflow-y-auto snap-y snap-mandatory scrollbar-hide"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {videoData.map((video, index) => (
-          <div key={video.id} className="relative w-full h-screen snap-start flex items-center justify-center bg-black">
-            {/* Video Element */}
-            <video
-              ref={(el) => {
-                videoRefs.current[index] = el
-              }}
-              className="w-full h-full object-cover"
-              src={video.videoUrl}
-              poster={video.thumbnail}
-              muted={isMuted}
-              playsInline
-              preload="metadata"
-              crossOrigin="anonymous"
-              loop
-            />
+        {videoData.map((video, index) => {
+          const loadState = videoLoadStates[video.id] || {}
 
-            {/* Progress Bars (Instagram Style) */}
-            <div className="absolute top-2 left-4 right-4 z-30 flex space-x-1">
-              {videoData.map((_, progressIndex) => (
-                <div key={progressIndex} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white transition-all duration-300 rounded-full"
-                    style={{
-                      width:
-                        progressIndex === currentVideoIndex
-                          ? `${videoProgress[video.id] || 0}%`
-                          : progressIndex < currentVideoIndex
-                            ? "100%"
-                            : "0%",
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Loading/Buffering Overlay */}
-            {(isLoading || isBuffering) && index === currentVideoIndex && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
-                <Loader2 className="w-8 h-8 text-white animate-spin" />
-              </div>
-            )}
-
-            {/* Play/Pause Overlay */}
-            <div className="absolute inset-0 z-10 flex items-center justify-center" onClick={togglePlayPause}>
-              {!isPlaying && index === currentVideoIndex && !isLoading && !isBuffering && (
-                <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                  <Play className="w-8 h-8 text-white ml-1" />
-                </div>
-              )}
-            </div>
-
-            {/* User Info & Description (Bottom Left) */}
+          return (
             <div
-              className={`absolute bottom-0 left-0 right-20 z-20 p-4 transition-all duration-300 ${
-                showControls || !isPlaying ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
+              key={video.id}
+              className="relative w-full h-screen snap-start flex items-center justify-center bg-black"
             >
-              <div className="space-y-3">
-                {/* User Avatar & Name */}
-                <div className="flex items-center space-x-3">
-                  <div className="relative">
-                    <img
-                      src={video.avatar || "/placeholder.svg"}
-                      alt={video.username}
-                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
+              {/* Video Element */}
+              <video
+                ref={(el) => {
+                  videoRefs.current[index] = el
+                }}
+                className="w-full h-full object-cover"
+                src={video.videoUrl}
+                poster={video.thumbnail}
+                muted={isMuted}
+                playsInline
+                preload="metadata"
+                crossOrigin="anonymous"
+                loop
+              />
+
+              {/* Progress Bars (Instagram Style) */}
+              <div className="absolute top-2 left-4 right-4 z-30 flex space-x-1">
+                {videoData.map((_, progressIndex) => (
+                  <div key={progressIndex} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-white transition-all duration-300 rounded-full"
+                      style={{
+                        width:
+                          progressIndex === currentVideoIndex
+                            ? `${videoProgress[video.id] || 0}%`
+                            : progressIndex < currentVideoIndex
+                              ? "100%"
+                              : "0%",
+                      }}
                     />
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-white font-semibold text-sm">{video.username}</span>
-                    {video.isVerified && (
-                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
+                ))}
+              </div>
+
+              {/* Loading States */}
+              {(loadState.loading || loadState.buffering) && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 z-20">
+                  <Loader2 className="w-8 h-8 text-white animate-spin mb-2" />
+                  <span className="text-white text-sm">{loadState.loading ? "Loading video..." : "Buffering..."}</span>
+                </div>
+              )}
+
+              {/* Error State */}
+              {loadState.error && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-20">
+                  <div className="text-center">
+                    {loadState.networkError ? (
+                      <WifiOff className="w-12 h-12 text-white mb-4 mx-auto" />
+                    ) : (
+                      <AlertTriangle className="w-12 h-12 text-white mb-4 mx-auto" />
                     )}
+                    <h3 className="text-white text-lg font-semibold mb-2">
+                      {loadState.networkError ? "No Internet Connection" : "Video Load Error"}
+                    </h3>
+                    <p className="text-white/80 text-sm mb-4">
+                      {loadState.networkError ? "Check your connection and try again" : "Unable to load this video"}
+                    </p>
                     <Button
+                      onClick={() => retryVideoLoad(video.id, videoRefs.current[index]!)}
                       variant="outline"
-                      size="sm"
-                      className="h-6 px-3 text-xs font-semibold border-white text-white bg-transparent hover:bg-white hover:text-black"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                     >
-                      Follow
+                      Try Again
                     </Button>
                   </div>
                 </div>
+              )}
 
-                {/* Description */}
-                <div className="space-y-1">
-                  <p className="text-white text-sm leading-relaxed pr-4">{video.description}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {video.hashtags.map((hashtag, hashIndex) => (
-                      <span key={hashIndex} className="text-blue-300 text-sm hover:underline cursor-pointer">
-                        {hashtag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Video Stats */}
-                <div className="flex items-center space-x-4 text-white/70 text-xs">
-                  <span>{formatCount(video.likes)} likes</span>
-                  <span>•</span>
-                  <span>{formatCount(video.comments)} comments</span>
-                  <span>•</span>
-                  <span>{video.duration}s</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons (Right Side - Instagram Style) */}
-            <div
-              className={`absolute right-3 bottom-24 z-20 flex flex-col items-center space-y-6 transition-all duration-300 ${
-                showControls || !isPlaying ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
-              }`}
-            >
-              {/* Like Button */}
-              <button
-                onClick={() => toggleLike(video.id)}
-                className="flex flex-col items-center space-y-1 group"
-                data-heart-animation
-              >
-                <div className="relative">
-                  <Heart
-                    className={`w-7 h-7 transition-all duration-200 ${
-                      likedVideos.has(video.id)
-                        ? "text-red-500 fill-red-500 scale-110"
-                        : "text-white group-hover:scale-110"
-                    }`}
-                  />
-                  {likedVideos.has(video.id) && (
-                    <div className="absolute inset-0 animate-ping">
-                      <Heart className="w-7 h-7 text-red-500 fill-red-500" />
+              {/* Play/Pause Overlay */}
+              <div className="absolute inset-0 z-10 flex items-center justify-center" onClick={togglePlayPause}>
+                {!isPlaying &&
+                  index === currentVideoIndex &&
+                  !loadState.loading &&
+                  !loadState.buffering &&
+                  !loadState.error && (
+                    <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                      <Play className="w-8 h-8 text-white ml-1" />
                     </div>
                   )}
+              </div>
+
+              {/* User Info & Description (Bottom Left) */}
+              <div
+                className={`absolute bottom-0 left-0 right-20 z-20 p-4 transition-all duration-300 ${
+                  showControls || !isPlaying ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                }`}
+              >
+                <div className="space-y-3">
+                  {/* User Avatar & Name */}
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <img
+                        src={video.avatar || "/placeholder.svg"}
+                        alt={video.username}
+                        className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-white font-semibold text-sm">{video.username}</span>
+                      {video.isVerified && (
+                        <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 px-3 text-xs font-semibold border-white text-white bg-transparent hover:bg-white hover:text-black"
+                      >
+                        Follow
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-1">
+                    <p className="text-white text-sm leading-relaxed pr-4">{video.description}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {video.hashtags.map((hashtag, hashIndex) => (
+                        <span key={hashIndex} className="text-blue-300 text-sm hover:underline cursor-pointer">
+                          {hashtag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Video Stats */}
+                  <div className="flex items-center space-x-4 text-white/70 text-xs">
+                    <span>{formatCount(video.likes)} likes</span>
+                    <span>•</span>
+                    <span>{formatCount(video.comments)} comments</span>
+                    <span>•</span>
+                    <span>{video.duration}s</span>
+                    {loadState.canPlay && (
+                      <>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Wifi className="w-3 h-3" />
+                          <span>HD</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <span className="text-white text-xs font-medium">
-                  {formatCount((video.likes || 0) + (likedVideos.has(video.id) ? 1 : 0))}
-                </span>
-              </button>
+              </div>
 
-              {/* Comment Button */}
-              <button onClick={() => handleComment(video)} className="flex flex-col items-center space-y-1 group">
-                <MessageCircle className="w-7 h-7 text-white group-hover:scale-110 transition-transform duration-200" />
-                <span className="text-white text-xs font-medium">{formatCount(video.comments || 0)}</span>
-              </button>
+              {/* Action Buttons (Right Side - Instagram Style) */}
+              <div
+                className={`absolute right-3 bottom-24 z-20 flex flex-col items-center space-y-6 transition-all duration-300 ${
+                  showControls || !isPlaying ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+                }`}
+              >
+                {/* Like Button */}
+                <button
+                  onClick={() => toggleLike(video.id)}
+                  className="flex flex-col items-center space-y-1 group"
+                  data-heart-animation
+                >
+                  <div className="relative">
+                    <Heart
+                      className={`w-7 h-7 transition-all duration-200 ${
+                        likedVideos.has(video.id)
+                          ? "text-red-500 fill-red-500 scale-110"
+                          : "text-white group-hover:scale-110"
+                      }`}
+                    />
+                    {likedVideos.has(video.id) && (
+                      <div className="absolute inset-0 animate-ping">
+                        <Heart className="w-7 h-7 text-red-500 fill-red-500" />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-white text-xs font-medium">
+                    {formatCount((video.likes || 0) + (likedVideos.has(video.id) ? 1 : 0))}
+                  </span>
+                </button>
 
-              {/* Share Button */}
-              <button onClick={() => handleShare(video)} className="flex flex-col items-center space-y-1 group">
-                <Send className="w-7 h-7 text-white group-hover:scale-110 transition-transform duration-200" />
-                <span className="text-white text-xs font-medium">{formatCount(video.shares || 0)}</span>
-              </button>
+                {/* Comment Button */}
+                <button onClick={() => handleComment(video)} className="flex flex-col items-center space-y-1 group">
+                  <MessageCircle className="w-7 h-7 text-white group-hover:scale-110 transition-transform duration-200" />
+                  <span className="text-white text-xs font-medium">{formatCount(video.comments || 0)}</span>
+                </button>
 
-              {/* Save Button */}
-              <button onClick={() => toggleSave(video.id)} className="flex flex-col items-center space-y-1 group">
-                <Bookmark
-                  className={`w-6 h-6 transition-all duration-200 ${
-                    savedVideos.has(video.id) ? "text-yellow-500 fill-yellow-500" : "text-white group-hover:scale-110"
-                  }`}
-                />
-              </button>
+                {/* Share Button */}
+                <button onClick={() => handleShare(video)} className="flex flex-col items-center space-y-1 group">
+                  <Send className="w-7 h-7 text-white group-hover:scale-110 transition-transform duration-200" />
+                  <span className="text-white text-xs font-medium">{formatCount(video.shares || 0)}</span>
+                </button>
 
-              {/* More Options */}
-              <button className="flex flex-col items-center space-y-1 group">
-                <MoreHorizontal className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-200" />
-              </button>
+                {/* Save Button */}
+                <button onClick={() => toggleSave(video.id)} className="flex flex-col items-center space-y-1 group">
+                  <Bookmark
+                    className={`w-6 h-6 transition-all duration-200 ${
+                      savedVideos.has(video.id) ? "text-yellow-500 fill-yellow-500" : "text-white group-hover:scale-110"
+                    }`}
+                  />
+                </button>
+
+                {/* More Options */}
+                <button className="flex flex-col items-center space-y-1 group">
+                  <MoreHorizontal className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-200" />
+                </button>
+              </div>
+
+              {/* Volume Control (Bottom Right) */}
+              <div
+                className={`absolute bottom-4 right-4 z-20 transition-all duration-300 ${
+                  showControls || !isPlaying ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <button
+                  onClick={toggleMute}
+                  className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-all duration-200"
+                >
+                  {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+                </button>
+              </div>
+
+              {/* Navigation Hints */}
+              {index > 0 && (
+                <button
+                  onClick={() => scrollToVideo(index - 1)}
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full opacity-20 hover:opacity-60 transition-opacity duration-200 z-10"
+                >
+                  <ChevronUp className="w-6 h-6 text-white" />
+                </button>
+              )}
+
+              {index < videoData.length - 1 && (
+                <button
+                  onClick={() => scrollToVideo(index + 1)}
+                  className="absolute bottom-1/2 left-1/2 transform -translate-x-1/2 translate-y-full opacity-20 hover:opacity-60 transition-opacity duration-200 z-10"
+                >
+                  <ChevronDown className="w-6 h-6 text-white" />
+                </button>
+              )}
             </div>
-
-            {/* Volume Control (Bottom Right) */}
-            <div
-              className={`absolute bottom-4 right-4 z-20 transition-all duration-300 ${
-                showControls || !isPlaying ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              <button
-                onClick={toggleMute}
-                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-all duration-200"
-              >
-                {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
-              </button>
-            </div>
-
-            {/* Navigation Hints */}
-            {index > 0 && (
-              <button
-                onClick={() => scrollToVideo(index - 1)}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full opacity-20 hover:opacity-60 transition-opacity duration-200 z-10"
-              >
-                <ChevronUp className="w-6 h-6 text-white" />
-              </button>
-            )}
-
-            {index < videoData.length - 1 && (
-              <button
-                onClick={() => scrollToVideo(index + 1)}
-                className="absolute bottom-1/2 left-1/2 transform -translate-x-1/2 translate-y-full opacity-20 hover:opacity-60 transition-opacity duration-200 z-10"
-              >
-                <ChevronDown className="w-6 h-6 text-white" />
-              </button>
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Video Counter (Top Right) */}
