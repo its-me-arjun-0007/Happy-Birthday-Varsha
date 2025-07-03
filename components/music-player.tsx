@@ -13,12 +13,12 @@ import { blobAssets } from "@/lib/blob-assets"
 const PLAYLIST = [
   {
     id: 1,
-    title: "Happy Birthday My Wife",
+    title: "Happy Birthday My cutie",
     artist: "Birthday Special",
     duration: 210,
     audioUrl:
       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Happy_Birthday_My_Wife%28256k%29-hlNHNBhCDZIFtn7Kbsp2vpe10IvgZ5.mp3",
-    cover: blobAssets.music.song1.cover,
+    cover: blobAssets.music.song1.cover, // This now points to the new contemplative portrait
   },
   {
     id: 2,
@@ -244,21 +244,21 @@ export default function MusicPlayer() {
     <div className="space-y-6">
       {/* Current track info */}
       <div className="flex items-center gap-4">
-        <div className="h-20 w-20 rounded-md overflow-hidden flex-shrink-0 relative">
+        <div className="h-20 w-20 rounded-lg overflow-hidden flex-shrink-0 relative shadow-lg">
           <img
             src={currentTrack.cover || "/placeholder.svg"}
-            alt={currentTrack.title}
-            className="h-full w-full object-cover"
+            alt={`${currentTrack.title} cover art`}
+            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
           />
           {isLoading && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
               <Loader2 className="h-6 w-6 text-white animate-spin" />
             </div>
           )}
         </div>
-        <div className="flex-1">
-          <h3 className="font-semibold text-lg text-purple-800">{currentTrack.title}</h3>
-          <p className="text-gray-600">{currentTrack.artist}</p>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-lg text-purple-800 truncate">{currentTrack.title}</h3>
+          <p className="text-gray-600 text-sm truncate">{currentTrack.artist}</p>
           {autoPlayBlocked && hasUserInteracted && (
             <Badge variant="outline" className="mt-1 text-xs text-orange-600 border-orange-300">
               Auto-play blocked - Click play
@@ -356,11 +356,11 @@ export default function MusicPlayer() {
               onClick={() => handleTrackSelect(index)}
             >
               <CardContent className="p-3 flex items-center gap-3">
-                <div className="h-10 w-10 rounded overflow-hidden flex-shrink-0 relative">
+                <div className="h-12 w-12 rounded-md overflow-hidden flex-shrink-0 relative shadow-sm">
                   <img
                     src={track.cover || "/placeholder.svg"}
-                    alt={track.title}
-                    className="h-full w-full object-cover"
+                    alt={`${track.title} cover art`}
+                    className="h-full w-full object-cover transition-transform duration-200 hover:scale-105"
                   />
                   {index === currentTrackIndex && isPlaying && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">

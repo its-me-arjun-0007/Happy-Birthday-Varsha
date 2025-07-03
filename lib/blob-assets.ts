@@ -44,23 +44,27 @@ export const blobAssets = {
       "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/smiley_y_y._-20240922-0001-0jSK0R9A53USB1XiIURIqzQpgAcqnZ.mp4", // NEW: Updated with the latest smiley video (September 2024)
   },
 
-  // Music files
+  // Music files - Updated with new covers for all songs
   music: {
     song1: {
       audio: "https://files.catbox.moe/u9twdd.mp3",
-      cover: "https://files.catbox.moe/3m0neu.jpg",
+      cover:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Picsart_25-01-27_03-18-45-343-vBAzBLunPDMNXzKQJCRCorL1rZbBwX.png", // NEW: Updated cover photo - contemplative portrait by window
     },
     song2: {
       audio: "https://files.catbox.moe/bbo9ig.mp3",
-      cover: "https://files.catbox.moe/wne5n9.jpg",
+      cover:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Picsart_25-06-12_18-32-19-149.jpg-nKfJVmQ09FsMeitqjgYnVnuneI75pZ.jpeg", // NEW: Senjitaley movie poster - romantic scene
     },
     song3: {
       audio: "https://files.catbox.moe/4dxt66.mp3",
-      cover: "https://files.catbox.moe/0ja0i5.jpg",
+      cover:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Picsart_25-06-12_18-31-40-321.jpg-P4Q0GxIdfcST2VXmhzp46ACFd7fOEC.jpeg", // NEW: Nee Kavithaigala lyric video - intimate poetic scene
     },
     song4: {
       audio: "https://files.catbox.moe/h8djbg.mp3",
-      cover: "https://files.catbox.moe/nvrvne.jpg",
+      cover:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Picsart_25-06-12_18-42-49-608.jpg-2wbNzOiIoAx5NMgx2o2K63rgLSHtGU.jpeg", // NEW: Sahibaa lyrical video - dreamy romantic Malayalam poster
     },
   },
 
